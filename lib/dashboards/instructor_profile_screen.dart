@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../auth/welcome_screen.dart'; // Import to redirect on logout
+import 'package:shared_preferences/shared_preferences.dart'; // Add this import
+import '../auth/welcome_screen.dart';
 
 class InstructorProfileScreen extends StatelessWidget {
   const InstructorProfileScreen({super.key});
@@ -11,14 +12,15 @@ class InstructorProfileScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text("Profile", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text("Profile",
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             const SizedBox(height: 20),
-            
+
             // 1. Profile Header
             Center(
               child: Stack(
@@ -26,25 +28,30 @@ class InstructorProfileScreen extends StatelessWidget {
                   const CircleAvatar(
                     radius: 60,
                     backgroundColor: Color(0xFFE3F2FD),
-                    child: Icon(Icons.person, size: 80, color: Color(0xFF1976D2)),
+                    child:
+                        Icon(Icons.person, size: 80, color: Color(0xFF1976D2)),
                   ),
                   Positioned(
                     bottom: 0,
                     right: 0,
                     child: Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(color: Color(0xFF1976D2), shape: BoxShape.circle),
-                      child: const Icon(Icons.edit, color: Colors.white, size: 20),
+                      decoration: const BoxDecoration(
+                          color: Color(0xFF1976D2), shape: BoxShape.circle),
+                      child:
+                          const Icon(Icons.edit, color: Colors.white, size: 20),
                     ),
                   ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 15),
-            const Text("Dr. Alemu", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-            const Text("alemu.instructor@bdu.edu", style: TextStyle(color: Colors.grey)),
-            
+            const Text("Dr. Alemu",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const Text("alemu.instructor@bdu.edu",
+                style: TextStyle(color: Colors.grey)),
+
             const SizedBox(height: 30),
 
             // 2. Settings List
@@ -56,26 +63,35 @@ class InstructorProfileScreen extends StatelessWidget {
 
             const SizedBox(height: 40),
 
-            // 3. Logout Button
+            // 3. Logout Button (Updated Logic)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30),
               child: ElevatedButton(
-                onPressed: () {
-                  // Logic to clear tokens would go here
-                  Navigator.pushAndRemoveUntil(
-                    context, 
-                    MaterialPageRoute(builder: (context) => const WelcomeScreen()),
-                    (route) => false,
-                  );
+                onPressed: () async {
+                  // PERSISTENCE: Clear all locally stored data
+                  final SharedPreferences prefs = await SharedPreferences.getInstance();
+                  await prefs.clear();
+
+                  // Ensure the context is still valid before navigating
+                  if (context.mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const WelcomeScreen()),
+                      (route) => false,
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red[50],
                   foregroundColor: Colors.red,
                   minimumSize: const Size(double.infinity, 55),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30)),
                   elevation: 0,
                 ),
-                child: const Text("Log Out", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: const Text("Log Out",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 20),
@@ -90,7 +106,8 @@ class InstructorProfileScreen extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 30, vertical: 5),
       leading: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(10)),
+        decoration: BoxDecoration(
+            color: Colors.grey[100], borderRadius: BorderRadius.circular(10)),
         child: Icon(icon, color: Colors.blueGrey),
       ),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),

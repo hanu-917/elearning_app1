@@ -14,16 +14,19 @@ class ApiService {
       );
 
       final data = jsonDecode(response.body);
-      if (response.statusCode == 200 && data['success'] == true) {
+
+      // Change the condition to check for the presence of the accessToken
+      if (response.statusCode == 200 && data['accessToken'] != null) {
         return data;
       } else {
-        throw Exception(data['message'] ?? 'Login failed');
+        // If the backend sends an error message, use it, otherwise fallback
+        throw Exception(data['message'] ?? 'Invalid email or password');
       }
     } catch (e) {
-      throw Exception('Server Error: $e');
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
     }
   }
-
+ 
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
     try {
       final response = await http.post(
