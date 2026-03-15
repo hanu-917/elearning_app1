@@ -16,10 +16,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Automatically move from Splash (Step 0) to Get Started (Step 1) after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) setState(() => _step = 1);
-    });
+    // Defaulting directly to 'Get Started' screen (Step 1)
+    _step = 1;
   }
 
   @override

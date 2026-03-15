@@ -8,19 +8,22 @@ class InstructorInboxScreen extends StatefulWidget {
 }
 
 class _InstructorInboxScreenState extends State<InstructorInboxScreen> {
-  bool isChatSelected = true; // State for the Chat/Announce toggle
+  bool isChatSelected = true; 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF4F7FC), // Match background color to theme
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF4F7FC),
         elevation: 0,
-        leading: const Icon(Icons.arrow_back, color: Colors.black),
-        title: const Text("Courses", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        centerTitle: false,
+        title: const Text("Inbox", style: TextStyle(color: Color(0xFF05398F), fontSize: 24, fontWeight: FontWeight.bold)),
         actions: [
-          IconButton(icon: const Icon(Icons.search, color: Colors.black), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.search_rounded, color: Color(0xFF05398F)), 
+            onPressed: () {}
+          ),
         ],
       ),
       body: Column(
@@ -35,15 +38,16 @@ class _InstructorInboxScreenState extends State<InstructorInboxScreen> {
           // 2. Chat List
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               children: [
-                _buildChatTile("Natasha", "Hi, Good Evening Bro!", "03", "14:59"),
-                _buildChatTile("Alex", "I Just Finished It..!", "02", "06:35"),
-                _buildChatTile("John", "How are you?", "", "08:10"),
-                _buildChatTile("Mia", "OMG, This is Amazing..", "05", "21:07"),
-                _buildChatTile("Maria", "Wow, This is Really Epic", "", "09:15"),
-                _buildChatTile("Tiya", "Hi, Good Evening Bro!", "03", "14:59"),
-                _buildChatTile("Manisha", "I Just Finished It..!", "02", "06:35"),
+                _buildChatTile("Natasha", "Hi, Good Evening Prof!", "3", "14:59", Colors.purple),
+                _buildChatTile("Alex", "I Just Finished It..!", "2", "06:35", Colors.orange),
+                _buildChatTile("John", "How are you?", "", "08:10", Colors.blue),
+                _buildChatTile("Mia", "Could we get an extension?", "5", "Yesterday", Colors.green),
+                _buildChatTile("Maria", "Understood, thank you.", "", "Yesterday", Colors.red),
+                _buildChatTile("Tiya", "When is the next lecture?", "1", "Mon", Colors.teal),
+                _buildChatTile("Manisha", "I've uploaded my assignment.", "", "Mon", Colors.indigo),
               ],
             ),
           ),
@@ -52,8 +56,9 @@ class _InstructorInboxScreenState extends State<InstructorInboxScreen> {
       // 3. Floating Action Button for New Message
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
-        backgroundColor: const Color(0xFFE3F2FD),
-        child: const Icon(Icons.campaign, color: Color(0xFF1976D2), size: 30),
+        backgroundColor: const Color(0xFF09AEF5),
+        elevation: 4,
+        child: const Icon(Icons.maps_ugc_rounded, color: Colors.white, size: 28),
       ),
     );
   }
@@ -63,25 +68,28 @@ class _InstructorInboxScreenState extends State<InstructorInboxScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       height: 50,
       decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(25),
+        color: Colors.black.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
           Expanded(
             child: GestureDetector(
               onTap: () => setState(() => isChatSelected = true),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: isChatSelected ? const Color(0xFF1B5E20) : Colors.transparent, // Dark Green
-                  borderRadius: BorderRadius.circular(25),
+                  color: isChatSelected ? Colors.white : Colors.transparent, 
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: isChatSelected ? [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 2))] : [],
                 ),
                 child: Center(
                   child: Text(
-                    "Chat",
+                    "Chats",
                     style: TextStyle(
-                      color: isChatSelected ? Colors.white : Colors.black54,
-                      fontWeight: FontWeight.bold,
+                      color: isChatSelected ? const Color(0xFF05398F) : Colors.black54,
+                      fontWeight: isChatSelected ? FontWeight.bold : FontWeight.w600,
                     ),
                   ),
                 ),
@@ -91,17 +99,20 @@ class _InstructorInboxScreenState extends State<InstructorInboxScreen> {
           Expanded(
             child: GestureDetector(
               onTap: () => setState(() => isChatSelected = false),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  color: !isChatSelected ? const Color(0xFFE3F2FD) : Colors.transparent, // Light Blue
-                  borderRadius: BorderRadius.circular(25),
+                  color: !isChatSelected ? Colors.white : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: !isChatSelected ? [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 2))] : [],
                 ),
                 child: Center(
                   child: Text(
-                    "Announce",
+                    "Announcements",
                     style: TextStyle(
-                      color: !isChatSelected ? const Color(0xFF1976D2) : Colors.black54,
-                      fontWeight: FontWeight.bold,
+                      color: !isChatSelected ? const Color(0xFF05398F) : Colors.black54,
+                      fontWeight: !isChatSelected ? FontWeight.bold : FontWeight.w600,
                     ),
                   ),
                 ),
@@ -113,27 +124,74 @@ class _InstructorInboxScreenState extends State<InstructorInboxScreen> {
     );
   }
 
-  Widget _buildChatTile(String name, String message, String count, String time) {
-    return ListTile(
-      leading: const CircleAvatar(
-        radius: 25,
-        backgroundColor: Colors.black, // Matching the solid black profiles in screenshot
-      ),
-      title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text(message, maxLines: 1, overflow: TextOverflow.ellipsis),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (count.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: const BoxDecoration(color: Colors.blue, shape: BoxShape.circle),
-              child: Text(count, style: const TextStyle(color: Colors.white, fontSize: 10)),
-            ),
-          const SizedBox(height: 5),
-          Text(time, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+  Widget _buildChatTile(String name, String message, String count, String time, Color avatarColor) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          )
         ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {},
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 26,
+                  backgroundColor: avatarColor.withOpacity(0.15),
+                  child: Text(name[0], style: TextStyle(color: avatarColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
+                          Text(time, style: TextStyle(color: count.isNotEmpty ? const Color(0xFF09AEF5) : Colors.black38, fontSize: 12, fontWeight: count.isNotEmpty ? FontWeight.bold : FontWeight.normal)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              message, 
+                              maxLines: 1, 
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: count.isNotEmpty ? Colors.black87 : Colors.black54, fontWeight: count.isNotEmpty ? FontWeight.w600 : FontWeight.normal),
+                            ),
+                          ),
+                          if (count.isNotEmpty)
+                            Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(color: Color(0xFF09AEF5), shape: BoxShape.circle),
+                              child: Text(count, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

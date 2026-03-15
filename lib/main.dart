@@ -60,28 +60,77 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Show a loading spinner while checking storage
+    Widget child;
+
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
+      child = Scaffold(
+        key: const ValueKey('loading'),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF09AEF5), Color(0xFF05398F)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40.0),
+              child: Column(
+                children: [
+                  const Spacer(flex: 3),
+                  
+                  // Central Logo lowered only on the loading screen
+                  Image.asset(
+                    'assets/logo.png',
+                    height: 180,
+                  ),
+                  
+                  const Spacer(flex: 1),
+                  
+                  // This invisible layout mimics the element heights of the Welcome screen
+                  // locking the logo in the exact same pixel position during transition
+                  Opacity(
+                    opacity: 0.0,
+                    child: Column(
+                      children: [
+                        const Text(
+                          "Welcome to BDU E-Learning App",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          "Learn Anytime, Anywhere",
+                          style: TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(height: 40),
+                        Container(height: 55), // Button height
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 50),
+                ],
+              ),
+            ),
+          ),
         ),
       );
-    }
-
-    // 2. If no token is found, send them to the Welcome/Login flow
-    if (_token == null) {
-      return const WelcomeScreen();
-    }
-
-    // 3. If token exists, redirect based on their saved role
-    if (_role == 'instructor') {
-      return const InstructorDashboard();
+    } else if (_token == null) {
+      child = const WelcomeScreen(key: ValueKey('welcome'));
+    } else if (_role == 'instructor') {
+      child = const InstructorDashboard(key: ValueKey('instructor'));
     } else if (_role == 'student') {
-      return const StudentDashboard();
+      child = const StudentDashboard(key: ValueKey('student'));
+    } else {
+      child = const WelcomeScreen(key: ValueKey('welcome_fallback'));
     }
 
-    // Fallback to welcome if something is malformed
-    return const WelcomeScreen();
+    // Add AnimatedSwitcher for a smooth cross-fade transition
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 800),
+      child: child,
+    );
   }
 }

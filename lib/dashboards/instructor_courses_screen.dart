@@ -6,43 +6,52 @@ class InstructorCoursesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF4F7FC), // Match home screen background
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF4F7FC),
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () {}, // Handle back navigation
-        ),
-        title: const Text("Courses", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        centerTitle: false,
+        title: const Text("My Courses", style: TextStyle(color: Color(0xFF05398F), fontSize: 24, fontWeight: FontWeight.bold)),
         actions: [
-          IconButton(icon: const Icon(Icons.search, color: Colors.black), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.search_rounded, color: Color(0xFF05398F)), 
+            onPressed: () {}
+          ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Category Grid (Materials, Assessments, etc.)
+            // 1. Sleek Category Grid (Materials, Assessments, etc.)
             _buildCategoryGrid(),
             
-            const SizedBox(height: 30),
+            const SizedBox(height: 35),
             
             // 2. Section Header
-            const Text(
-              "Assigned courses",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Assigned Courses",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+                TextButton(
+                  onPressed: () {}, 
+                  child: const Text("See All", style: TextStyle(color: Color(0xFF09AEF5), fontWeight: FontWeight.bold))
+                )
+              ],
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 10),
             
             // 3. List of Courses
-            _buildCourseItem("Computer Security", "CoSc4051", "CS"),
-            _buildCourseItem("Compiler Design", "CoSc4022", "CD"),
-            _buildCourseItem("Complexity Theory", "CoSc4021", "CT"),
-            _buildCourseItem("Research Methods in Comp...", "CoSc4111", "RM"),
+            _buildCourseItem("Computer Security", "CoSc4051", "CS", Colors.blue),
+            _buildCourseItem("Compiler Design", "CoSc4022", "CD", Colors.purple),
+            _buildCourseItem("Complexity Theory", "CoSc4021", "CT", Colors.orange),
+            _buildCourseItem("Research Methods", "CoSc4111", "RM", Colors.green),
             
-            const SizedBox(height: 20),
+            const SizedBox(height: 30),
           ],
         ),
       ),
@@ -56,45 +65,59 @@ class InstructorCoursesScreen extends StatelessWidget {
       crossAxisCount: 2,
       crossAxisSpacing: 15,
       mainAxisSpacing: 15,
-      childAspectRatio: 1.5, // Makes them rectangular like the screenshot
+      childAspectRatio: 1.4,
       children: [
-        _buildCategoryTile("Materials", Icons.layers, const Color(0xFF90CAF9)), // Light Blue
-        _buildCategoryTile("Assessments", Icons.description, const Color(0xFFA5D6A7)), // Light Green
-        _buildCategoryTile("Grade", Icons.bar_chart, const Color(0xFFB2EBF2)), // Cyan
-        _buildCategoryTile("Groups", Icons.groups, const Color(0xFF9FA8DA)), // Soft Purple
+        _buildCategoryTile("Materials", Icons.layers_rounded, const Color(0xFF09AEF5), const Color(0xFF05398F)),
+        _buildCategoryTile("Assessments", Icons.description_rounded, const Color(0xFF66BB6A), const Color(0xFF2E7D32)),
+        _buildCategoryTile("Grades", Icons.bar_chart_rounded, const Color(0xFFFFCA28), const Color(0xFFFF8F00)),
+        _buildCategoryTile("Groups", Icons.groups_rounded, const Color(0xFFAB47BC), const Color(0xFF6A1B9A)),
       ],
     );
   }
 
-  Widget _buildCategoryTile(String title, IconData icon, Color color) {
+  Widget _buildCategoryTile(String title, IconData icon, Color gradientStart, Color gradientEnd) {
     return Container(
       decoration: BoxDecoration(
-        color: color,
+        gradient: LinearGradient(
+          colors: [gradientStart, gradientEnd],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: gradientEnd.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          )
+        ],
       ),
       child: Stack(
         children: [
-          // Background Icon (Partially visible)
+          // Background Icon (Partially visible watermark style)
           Positioned(
-            right: -10,
-            bottom: -10,
-            child: Icon(icon, size: 80, color: Colors.white.withOpacity(0.3)),
+            right: -15,
+            bottom: -15,
+            child: Icon(icon, size: 90, color: Colors.white.withOpacity(0.15)),
           ),
           Padding(
-            padding: const EdgeInsets.all(15.0),
+            padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(12)
+                  ),
+                  child: Icon(icon, size: 24, color: Colors.white),
                 ),
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.all(5),
-                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                  child: Icon(icon, size: 20, color: color),
-                )
+                Text(
+                  title,
+                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                ),
               ],
             ),
           ),
@@ -103,35 +126,68 @@ class InstructorCoursesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCourseItem(String title, String code, String leadingText) {
+  Widget _buildCourseItem(String title, String code, String initials, Color avatarColor) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.grey.shade200),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          )
+        ],
       ),
-      child: Row(
-        children: [
-          // Circular leading with initials
-          CircleAvatar(
-            backgroundColor: Colors.grey[100],
-            child: Text(leadingText, style: const TextStyle(color: Colors.blueGrey, fontSize: 12)),
-          ),
-          const SizedBox(width: 15),
-          // Course Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {},
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                Text(code, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                // Circular leading with initials and gradient
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: avatarColor.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      initials, 
+                      style: TextStyle(color: avatarColor, fontWeight: FontWeight.bold, fontSize: 16)
+                    )
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Course Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
+                      const SizedBox(height: 4),
+                      Text(code, style: const TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.w500)),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F7FC),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF05398F), size: 14),
+                ),
               ],
             ),
           ),
-          const Icon(Icons.more_vert, color: Colors.grey),
-        ],
+        ),
       ),
     );
   }
