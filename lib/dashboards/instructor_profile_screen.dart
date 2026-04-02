@@ -26,6 +26,7 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _title = prefs.getString('title') ?? '';
+      if (_title == 'None') _title = '';
       _firstName = prefs.getString('first_name') ?? '';
       _middleName = prefs.getString('middle_name') ?? '';
       _lastName = prefs.getString('last_name') ?? '';

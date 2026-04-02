@@ -22,6 +22,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _title = prefs.getString('title') ?? '';
+      if (_title == 'None') _title = '';
       _firstName = prefs.getString('first_name') ?? 'Student';
     });
   }

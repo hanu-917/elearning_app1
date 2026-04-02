@@ -23,6 +23,7 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
     setState(() {
       _title = prefs.getString('title') ?? 'Professor';
       if (_title.isEmpty) _title = 'Professor';
+      if (_title == 'None') _title = '';
       _firstName = prefs.getString('first_name') ?? '';
     });
   }
