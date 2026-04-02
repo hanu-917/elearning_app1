@@ -381,41 +381,48 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF09AEF5).withOpacity(0.15),
-                      shape: BoxShape.circle,
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF09AEF5).withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          item['initials'], 
+                          style: const TextStyle(color: Color(0xFF09AEF5), fontWeight: FontWeight.bold, fontSize: 14)
+                        )
+                      ),
                     ),
-                    child: Center(
-                      child: Text(
-                        item['initials'], 
-                        style: const TextStyle(color: Color(0xFF09AEF5), fontWeight: FontWeight.bold, fontSize: 14)
-                      )
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
-                      const SizedBox(height: 2),
-                      Text("${item['department']} - ${item['section']}", style: const TextStyle(fontSize: 12, color: Colors.black54)),
-                      const SizedBox(height: 4),
-                      Row(
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Icon(Icons.access_time_rounded, size: 12, color: Colors.black45),
-                          const SizedBox(width: 4),
-                          Text(item['submittedAt'], style: const TextStyle(color: Colors.black45, fontSize: 12)),
+                          Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87), overflow: TextOverflow.ellipsis),
+                          const SizedBox(height: 2),
+                          Text("${item['department']} - ${item['section']}", style: const TextStyle(fontSize: 12, color: Colors.black54), overflow: TextOverflow.ellipsis),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(Icons.access_time_rounded, size: 12, color: Colors.black45),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(item['submittedAt'], style: const TextStyle(color: Colors.black45, fontSize: 12), overflow: TextOverflow.ellipsis),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               if (isGraded)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

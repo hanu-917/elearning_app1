@@ -1,7 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class InstructorHomeScreen extends StatelessWidget {
+class InstructorHomeScreen extends StatefulWidget {
   const InstructorHomeScreen({super.key});
+
+  @override
+  State<InstructorHomeScreen> createState() => _InstructorHomeScreenState();
+}
+
+class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
+  String _title = 'Professor';
+  String _firstName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _title = prefs.getString('title') ?? 'Professor';
+      if (_title.isEmpty) _title = 'Professor';
+      _firstName = prefs.getString('first_name') ?? '';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,10 +95,10 @@ class InstructorHomeScreen extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text("Hello, Professor", style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5)),
-                SizedBox(height: 4),
-                Text("Welcome to BDU ELMS", style: TextStyle(color: Colors.white70, fontSize: 14)),
+              children: [
+                Text("Hello, $_title $_firstName".trim(), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5)),
+                const SizedBox(height: 4),
+                const Text("Welcome to BDU ELMS", style: TextStyle(color: Colors.white70, fontSize: 14)),
               ],
             ),
           ),

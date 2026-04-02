@@ -52,9 +52,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final String role = (userData['role'] ?? 'student').toString().toLowerCase();
 
-      // 3. PERSISTENCE: Only save if 'Remember Me' is checked
+      // 3. PERSISTENCE
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setString('first_name', userData['first_name'] ?? '');
+      await prefs.setString('middle_name', userData['middle_name'] ?? '');
+      await prefs.setString('last_name', userData['last_name'] ?? '');
+      await prefs.setString('email', userData['email'] ?? '');
+      await prefs.setString('title', userData['title'] ?? '');
+      await prefs.setString('institutional_id', userData['institutional_id'] ?? '');
+
       if (_rememberMe) {
-        final SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', token);
         await prefs.setString('user_role', role);
       }

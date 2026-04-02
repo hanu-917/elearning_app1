@@ -1,7 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class StudentHomeScreen extends StatelessWidget {
+class StudentHomeScreen extends StatefulWidget {
   const StudentHomeScreen({super.key});
+
+  @override
+  State<StudentHomeScreen> createState() => _StudentHomeScreenState();
+}
+
+class _StudentHomeScreenState extends State<StudentHomeScreen> {
+  String _title = '';
+  String _firstName = 'Student';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _title = prefs.getString('title') ?? '';
+      _firstName = prefs.getString('first_name') ?? 'Student';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,10 +94,10 @@ class StudentHomeScreen extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text("Hi, Bereket", style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5)),
-                SizedBox(height: 4),
-                Text("Let's start learning!", style: TextStyle(color: Colors.white70, fontSize: 14)),
+              children: [
+                Text("Hi, ${_title.isNotEmpty ? '$_title ' : ''}$_firstName".trim(), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5)),
+                const SizedBox(height: 4),
+                const Text("Let's start learning!", style: TextStyle(color: Colors.white70, fontSize: 14)),
               ],
             ),
           ),

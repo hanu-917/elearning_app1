@@ -2,8 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart'; 
 import '../auth/welcome_screen.dart';
 
-class InstructorProfileScreen extends StatelessWidget {
+class InstructorProfileScreen extends StatefulWidget {
   const InstructorProfileScreen({super.key});
+
+  @override
+  State<InstructorProfileScreen> createState() => _InstructorProfileScreenState();
+}
+
+class _InstructorProfileScreenState extends State<InstructorProfileScreen> {
+  String _title = 'Dr.';
+  String _firstName = '';
+  String _middleName = '';
+  String _lastName = 'Alemu';
+  String _email = 'alemu.instructor@bdu.edu';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _title = prefs.getString('title') ?? '';
+      _firstName = prefs.getString('first_name') ?? '';
+      _middleName = prefs.getString('middle_name') ?? '';
+      _lastName = prefs.getString('last_name') ?? '';
+      _email = prefs.getString('email') ?? '';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,19 +106,20 @@ class InstructorProfileScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
             
-            const Text("Dr. Alemu", style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.black87)),
+            Text("$_title $_firstName $_middleName $_lastName".replaceAll(RegExp(r'\s+'), ' ').trim(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.black87)),
             const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF09AEF5).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
+            if (_email.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF09AEF5).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  _email,
+                  style: const TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold, fontSize: 13)
+                ),
               ),
-              child: const Text(
-                "alemu.instructor@bdu.edu",
-                style: TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold, fontSize: 13)
-              ),
-            ),
 
             const SizedBox(height: 40),
 

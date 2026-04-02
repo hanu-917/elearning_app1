@@ -2,8 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart'; 
 import '../auth/welcome_screen.dart';
 
-class StudentProfileScreen extends StatelessWidget {
+class StudentProfileScreen extends StatefulWidget {
   const StudentProfileScreen({super.key});
+
+  @override
+  State<StudentProfileScreen> createState() => _StudentProfileScreenState();
+}
+
+class _StudentProfileScreenState extends State<StudentProfileScreen> {
+  String _title = '';
+  String _firstName = '';
+  String _middleName = '';
+  String _lastName = '';
+  String _email = '';
+  String _institutionalId = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _title = prefs.getString('title') ?? '';
+      _firstName = prefs.getString('first_name') ?? 'Student';
+      _middleName = prefs.getString('middle_name') ?? '';
+      _lastName = prefs.getString('last_name') ?? '';
+      _email = prefs.getString('email') ?? 'student@bdu.edu.et';
+      _institutionalId = prefs.getString('institutional_id') ?? 'N/A';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +108,7 @@ class StudentProfileScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
             
-            const Text("Bereket", style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.black87)),
+            Text("${_title.isNotEmpty ? '$_title ' : ''}$_firstName $_middleName $_lastName".replaceAll(RegExp(r'\s+'), ' ').trim(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.black87)),
             const SizedBox(height: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -86,11 +116,17 @@ class StudentProfileScreen extends StatelessWidget {
                 color: const Color(0xFF09AEF5).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text(
-                "ID: BDU/1234/15",
-                style: TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold, fontSize: 13)
+              child: Text(
+                _email,
+                style: const TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold, fontSize: 13)
               ),
             ),
+            const SizedBox(height: 4),
+            if (_institutionalId.isNotEmpty && _institutionalId != 'N/A')
+              Text(
+                "ID: $_institutionalId",
+                style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w500, fontSize: 13)
+              ),
 
             const SizedBox(height: 40),
 
