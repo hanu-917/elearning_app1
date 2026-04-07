@@ -8,188 +8,340 @@ class StudentCoursesScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC), // Match home screen background
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF4F7FC),
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-        title: const Text("Enrolled Courses", style: TextStyle(color: Color(0xFF05398F), fontSize: 24, fontWeight: FontWeight.bold)),
+        title: const Text(
+          "My Learning",
+          style: TextStyle(
+            color: Color(0xFF05398F),
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+          ),
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.search_rounded, color: Color(0xFF05398F)), 
-            onPressed: () {}
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF05398F).withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.search_rounded, color: Color(0xFF05398F)),
+              onPressed: () {},
+            ),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        physics: const BouncingScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Sleek Category Grid (Materials, Assessments, etc.)
-            _buildCategoryGrid(),
-            
+            const SizedBox(height: 10),
+            // Header Overview Card
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _buildOverviewCard(),
+            ),
             const SizedBox(height: 35),
             
-            // 2. Section Header
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  "Spring 2026 Semester",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-                ),
-                TextButton(
-                  onPressed: () {}, 
-                  child: const Text("Past", style: TextStyle(color: Color(0xFF09AEF5), fontWeight: FontWeight.bold))
-                )
-              ],
+            // Horizontal Courses List
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Active Courses",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF05398F),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {},
+                    child: const Text(
+                      "See All", 
+                      style: TextStyle(
+                        color: Color(0xFF09AEF5), 
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 10),
             
-            // 3. List of Courses
-            _buildCourseItem("Computer Security", "CoSc4051", "Dr. Alemu", "CS", Colors.blue, 0.65),
-            _buildCourseItem("Compiler Design", "CoSc4022", "Prof. Bekele", "CD", Colors.purple, 0.40),
-            _buildCourseItem("Complexity Theory", "CoSc4021", "Dr. Yonas", "CT", Colors.orange, 0.82),
-            _buildCourseItem("Research Methods", "CoSc4111", "Dr. Tadesse", "RM", Colors.green, 0.15),
+            SizedBox(
+              height: 230,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                children: [
+                  _buildCourseCard("Computer Security", "4 Tasks Pending", 0.65, const Color(0xFF05398F), const Color(0xFF09AEF5), Icons.security),
+                  _buildCourseCard("Compiler Design", "1 Task Pending", 0.40, const Color(0xFF6A1B9A), const Color(0xFFAB47BC), Icons.code),
+                  _buildCourseCard("Complexity Theory", "Up to date", 0.82, const Color(0xFFFF8F00), const Color(0xFFFFCA28), Icons.psychology),
+                  _buildCourseCard("Research Methods", "Reading Assigned", 0.15, const Color(0xFF2E7D32), const Color(0xFF66BB6A), Icons.biotech),
+                ],
+              ),
+            ),
+            const SizedBox(height: 35),
             
-            const SizedBox(height: 30),
+            // Quick Actions section
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                "Quick Actions",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF05398F),
+                ),
+              ),
+            ),
+            const SizedBox(height: 15),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(child: _buildActionChip("Assignments", Icons.assignment_turned_in_rounded, const Color(0xFF2E7D32), const Color(0xFF66BB6A))),
+                      const SizedBox(width: 15),
+                      Expanded(child: _buildActionChip("Grades", Icons.military_tech_rounded, const Color(0xFFFF8F00), const Color(0xFFFFCA28))),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                  Row(
+                    children: [
+                      Expanded(child: _buildActionChip("Schedule", Icons.calendar_month_rounded, const Color(0xFF05398F), const Color(0xFF09AEF5))),
+                      const SizedBox(width: 15),
+                      Expanded(child: _buildActionChip("Discussions", Icons.forum_rounded, const Color(0xFF6A1B9A), const Color(0xFFAB47BC))),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 40),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCategoryGrid() {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      crossAxisSpacing: 15,
-      mainAxisSpacing: 15,
-      childAspectRatio: 1.4,
-      children: [
-        _buildCategoryTile("Modules", Icons.library_books_rounded, const Color(0xFF09AEF5), const Color(0xFF05398F)),
-        _buildCategoryTile("Assignments", Icons.assignment_rounded, const Color(0xFF66BB6A), const Color(0xFF2E7D32)),
-        _buildCategoryTile("Results", Icons.fact_check_rounded, const Color(0xFFFFCA28), const Color(0xFFFF8F00)),
-        _buildCategoryTile("Peers", Icons.people_alt_rounded, const Color(0xFFAB47BC), const Color(0xFF6A1B9A)),
-      ],
-    );
-  }
-
-  Widget _buildCategoryTile(String title, IconData icon, Color gradientStart, Color gradientEnd) {
+  Widget _buildOverviewCard() {
     return Container(
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [gradientStart, gradientEnd],
+        gradient: const LinearGradient(
+          colors: [Color(0xFF05398F), Color(0xFF09AEF5)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: gradientEnd.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          )
+            color: const Color(0xFF09AEF5).withOpacity(0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
         ],
       ),
-      child: Stack(
+      child: Row(
         children: [
-          Positioned(
-            right: -15,
-            bottom: -15,
-            child: Icon(icon, size: 90, color: Colors.white.withOpacity(0.15)),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(12)
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, size: 24, color: Colors.white),
+                  child: const Text(
+                    "Spring 2026",
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),
+                  ),
                 ),
-                const Spacer(),
+                const SizedBox(height: 16),
+                const Text(
+                  "Great work!",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
                 Text(
-                  title,
-                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                  "You have completed 60% of your weekly goals.",
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.85),
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 20),
+          // Circular Progress 
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 80,
+                height: 80,
+                child: CircularProgressIndicator(
+                  value: 0.6,
+                  strokeWidth: 8,
+                  backgroundColor: Colors.white.withOpacity(0.2),
+                  strokeCap: StrokeCap.round,
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const Text(
+                "60%",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          )
         ],
       ),
     );
   }
 
-  Widget _buildCourseItem(String title, String code, String instructor, String initials, Color avatarColor, double progress) {
+  Widget _buildCourseCard(String title, String subtitle, double progress, Color darkColor, Color lightColor, IconData icon) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      width: 170,
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          )
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
           onTap: () {},
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Circular leading with initials
                 Container(
-                  width: 55,
-                  height: 55,
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: avatarColor.withOpacity(0.15),
+                    color: lightColor.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: Center(
-                    child: Text(
-                      initials, 
-                      style: TextStyle(color: avatarColor, fontWeight: FontWeight.bold, fontSize: 18)
-                    )
+                  child: Icon(icon, color: darkColor, size: 30),
+                ),
+                const Spacer(),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF05398F),
+                    height: 1.2,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.black54,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(width: 16),
-                // Course Info
+                const SizedBox(height: 16),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 8,
+                    backgroundColor: Colors.grey.shade100,
+                    valueColor: AlwaysStoppedAnimation<Color>(lightColor),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionChip(String label, IconData icon, Color darkColor, Color lightColor) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {},
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: lightColor.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: darkColor, size: 24),
+                ),
+                const SizedBox(width: 14),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
-                      const SizedBox(height: 4),
-                      Text("$code • $instructor", style: const TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.w500)),
-                      const SizedBox(height: 8),
-                      // Progress Bar
-                      Row(
-                        children: [
-                          Expanded(
-                            child: LinearProgressIndicator(
-                              value: progress,
-                              backgroundColor: Colors.grey.shade200,
-                              valueColor: AlwaysStoppedAnimation<Color>(avatarColor),
-                              borderRadius: BorderRadius.circular(5),
-                              minHeight: 6,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text("${(progress*100).toInt()}%", style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black45)),
-                        ],
-                      )
-                    ],
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: Colors.blueGrey.shade800,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
                   ),
                 ),
               ],
