@@ -1,11 +1,44 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 import 'instructor_materials_screen.dart';
 import 'instructor_groups_screen.dart';
 import 'instructor_assessments_screen.dart';
 import 'instructor_grades_screen.dart';
 
-class InstructorCoursesScreen extends StatelessWidget {
+class InstructorCoursesScreen extends StatefulWidget {
   const InstructorCoursesScreen({super.key});
+
+  @override
+  State<InstructorCoursesScreen> createState() => _InstructorCoursesScreenState();
+}
+
+class _InstructorCoursesScreenState extends State<InstructorCoursesScreen> {
+  final ApiService _apiService = ApiService();
+  List<dynamic> _courses = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCourses();
+  }
+
+  Future<void> _fetchCourses() async {
+    try {
+      final courses = await _apiService.getInstructorCourses();
+      setState(() {
+        _courses = courses;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString().replaceAll('Exception: ', '');
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,10 +83,24 @@ class InstructorCoursesScreen extends StatelessWidget {
             const SizedBox(height: 10),
             
             // 3. List of Courses
-            _buildCourseItem("Computer Security", "CoSc4051", "CS", Colors.blue),
-            _buildCourseItem("Compiler Design", "CoSc4022", "CD", Colors.purple),
-            _buildCourseItem("Complexity Theory", "CoSc4021", "CT", Colors.orange),
-            _buildCourseItem("Research Methods", "CoSc4111", "RM", Colors.green),
+            if (_isLoading)
+              const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+            else if (_error != null)
+              Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
+            else if (_courses.isEmpty)
+              const Center(child: Text("No courses assigned yet."))
+            else
+              ..._courses.map((course) {
+                // Get initials
+                String title = course['title'] ?? 'Unknown Course';
+                String initials = title.split(' ').map((e) => e.isNotEmpty ? e[0].toUpperCase() : '').take(2).join();
+                return _buildCourseItem(
+                  title,
+                  course['course_code'] ?? '',
+                  initials,
+                  Colors.blue, // Dynamic color could be implemented here
+                );
+              }).toList(),
             
             const SizedBox(height: 30),
           ],
