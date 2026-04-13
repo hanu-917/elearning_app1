@@ -49,15 +49,25 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
       
       final groupResults = await Future.wait(groupFutures);
       
-      List<dynamic> allGroups = [];
+      List<dynamic> allBatches = [];
       for (int i = 0; i < courses.length; i++) {
         final courseGroups = groupResults[i];
         if (courseGroups is List && courseGroups.isNotEmpty) {
-          allGroups.add({
-            "course_id": courses[i]['id'],
-            "course_title": courses[i]['title'] ?? courses[i]['course_code'] ?? "Course",
-            "course_code": courses[i]['course_code'] ?? "",
-            "groups": courseGroups,
+          // Group these specific groups by batch_name
+          final Map<String, List<dynamic>> batchesMap = {};
+          for (var g in courseGroups) {
+            final String bName = g['batch_name'] ?? 'General Groups';
+            if (!batchesMap.containsKey(bName)) batchesMap[bName] = [];
+            batchesMap[bName]!.add(g);
+          }
+          
+          batchesMap.forEach((name, groups) {
+            allBatches.add({
+              "batch_name": name,
+              "course_id": courses[i]['id'],
+              "course_title": courses[i]['title'] ?? courses[i]['course_code'] ?? "Course",
+              "groups": groups,
+            });
           });
         }
       }
@@ -66,7 +76,7 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
         setState(() {
           _courses = courses;
           _targets = targets;
-          _groups = allGroups;
+          _groups = allBatches;
         });
       }
     } catch (e) {
@@ -595,20 +605,14 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
     );
   }
 
-  Widget _buildGroupSetTile(Map<String, dynamic> groupSet) {
+  Widget _buildGroupSetTile(Map<String, dynamic> batch) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 15),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 5))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -616,51 +620,166 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFAB47BC).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.book_rounded, color: Color(0xFFAB47BC), size: 20),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: const Color(0xFF09AEF5).withOpacity(0.1), borderRadius: BorderRadius.circular(15)),
+                child: const Icon(Icons.auto_awesome_motion_rounded, color: Color(0xFF09AEF5)),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 15),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      groupSet["course_title"], 
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
-                    ),
-                    Text(
-                      groupSet["course_code"], 
-                      style: const TextStyle(color: Colors.black45, fontSize: 12),
-                    ),
+                    Text(batch["batch_name"] ?? "General Groups", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
+                    const SizedBox(height: 4),
+                    Text(batch["course_title"] ?? "Course", style: const TextStyle(fontSize: 13, color: Colors.black45)),
                   ],
                 ),
               ),
             ],
           ),
-          const Divider(height: 25),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: (groupSet["groups"] as List).map<Widget>((g) {
-              return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF4F7FC),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.black12.withOpacity(0.05))
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Text("${(batch["groups"] as List).length} Groups formed", style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w600, fontSize: 13)),
+              const Spacer(),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (c) => GroupDetailScreen(batch: batch)));
+                },
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text("More Detail", style: TextStyle(fontWeight: FontWeight.bold)),
+                    SizedBox(width: 5),
+                    Icon(Icons.arrow_forward_rounded, size: 16),
+                  ],
                 ),
-                child: Text(
-                  "${g['name']} (${(g['members'] as List).length} students)",
-                  style: const TextStyle(color: Color(0xFF05398F), fontSize: 12, fontWeight: FontWeight.w600),
-                ),
-              );
-            }).toList(),
+                style: TextButton.styleFrom(foregroundColor: const Color(0xFF09AEF5), padding: const EdgeInsets.symmetric(horizontal: 12)),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+class GroupDetailScreen extends StatelessWidget {
+  final Map<String, dynamic> batch;
+
+  const GroupDetailScreen({super.key, required this.batch});
+
+  @override
+  Widget build(BuildContext context) {
+    final List<dynamic> groups = batch["groups"] ?? [];
+    
+    // Extract unique depts and sections from the groups in this batch
+    final depts = groups.map((g) => g["department_name"]).where((d) => d != null).toSet().join(", ");
+    final sections = groups.map((g) => g["section"]).where((s) => s != null).toSet().join(", ");
+    final method = (groups.isNotEmpty && groups[0]["method"] != null) ? groups[0]["method"] : "N/A";
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F7FC),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF4F7FC),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF05398F), size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          batch["batch_name"] ?? "Group Details",
+          style: const TextStyle(color: Color(0xFF05398F), fontSize: 20, fontWeight: FontWeight.bold)
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Info Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInfoRow(Icons.school_rounded, "Course", batch["course_title"] ?? "N/A"),
+                  const Divider(height: 24),
+                  _buildInfoRow(Icons.business_rounded, "Department/s", depts.isEmpty ? "All" : depts),
+                  const Divider(height: 24),
+                  _buildInfoRow(Icons.class_rounded, "Section/s", sections.isEmpty ? "All" : sections),
+                  const Divider(height: 24),
+                  _buildInfoRow(Icons.settings_suggest_rounded, "Method", method),
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            Row(
+              children: [
+                const Text("Formed Groups", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
+                const Spacer(),
+                Text("${groups.length} Groups", style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w600)),
+              ],
+            ),
+            const SizedBox(height: 15),
+
+            ...groups.map((group) => _buildGroupCard(group)).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, color: const Color(0xFF09AEF5), size: 18),
+        const SizedBox(width: 12),
+        Text(label, style: const TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.w500)),
+        const Spacer(),
+        Text(value, style: const TextStyle(color: Color(0xFF05398F), fontSize: 14, fontWeight: FontWeight.bold)),
+      ],
+    );
+  }
+
+  Widget _buildGroupCard(Map<String, dynamic> group) {
+    final members = group["members"] as List<dynamic>? ?? [];
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withOpacity(0.03)),
+      ),
+      child: Theme(
+        data: ThemeData().copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: const Color(0xFF09AEF5).withOpacity(0.1), shape: BoxShape.circle),
+            child: const Icon(Icons.group_work_rounded, color: Color(0xFF09AEF5), size: 20),
+          ),
+          title: Text(group["name"] ?? "Group", style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
+          subtitle: Text("${members.length} members", style: const TextStyle(fontSize: 12, color: Colors.black45)),
+          childrenPadding: const EdgeInsets.only(left: 20, right: 20, bottom: 15),
+          children: members.map((m) => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                const Icon(Icons.person_outline_rounded, size: 16, color: Colors.black38),
+                const SizedBox(width: 10),
+                Text(m["full_name"] ?? "Unnamed", style: const TextStyle(fontSize: 14, color: Colors.black87)),
+              ],
+            ),
+          )).toList(),
+        ),
       ),
     );
   }
