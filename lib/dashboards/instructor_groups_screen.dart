@@ -107,19 +107,49 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setSheetState) {
-            // Find current department to get its sections
-            final currentDept = selectedDepartmentId != null 
-              ? _targets.firstWhere((t) => t["id"] == selectedDepartmentId, orElse: () => null) 
-              : null;
-            final List<String> availableSections = currentDept != null 
-              ? List<String>.from(currentDept["sections"] ?? []) 
+            // 1. Filter unique departments from the course stats
+            final Set<String> uniqueDeptIds = currentCourseStats.map((s) => s["department_id"].toString()).toSet();
+            final List<dynamic> availableDepts = [];
+            for (var deptId in uniqueDeptIds) {
+              final stat = currentCourseStats.firstWhere((s) => s["department_id"].toString() == deptId);
+              availableDepts.add({
+                "id": stat["department_id"],
+                "name": stat["department_name"],
+              });
+            }
+
+            // Auto-select department if only one is available
+            if (availableDepts.length == 1 && selectedDepartmentId == null && !isFetchingStats) {
+              Future.delayed(Duration.zero, () {
+                setSheetState(() {
+                  selectedDepartmentId = availableDepts[0]["id"].toString();
+                });
+              });
+            }
+
+            // 2. Filter sections from stats based on selected department
+            final List<String> availableSections = selectedDepartmentId != null
+              ? currentCourseStats
+                  .where((s) => s["department_id"].toString() == selectedDepartmentId)
+                  .map((s) => s["section"].toString())
+                  .toSet()
+                  .toList()
               : [];
+            
+            // Auto-select section if only one is available
+            if (availableSections.length == 1 && selectedSection == null && selectedDepartmentId != null) {
+              Future.delayed(Duration.zero, () {
+                setSheetState(() {
+                  selectedSection = availableSections[0];
+                });
+              });
+            }
 
             // Calculate the exact count for selected dept and section
             int currentSegmentCount = 0;
             if (selectedDepartmentId != null && selectedSection != null) {
               final stat = currentCourseStats.firstWhere(
-                (s) => s["department_id"] == selectedDepartmentId && s["section"] == selectedSection,
+                (s) => s["department_id"].toString() == selectedDepartmentId && s["section"].toString() == selectedSection,
                 orElse: () => null
               );
               if (stat != null) {
@@ -170,7 +200,11 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
                         fillColor: const Color(0xFFF4F7FC),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                       ),
-                      onChanged: (val) => groupName = val,
+                      onChanged: (val) {
+                        setSheetState(() {
+                          groupName = val;
+                        });
+                      },
                     ),
                     const SizedBox(height: 20),
 
@@ -238,9 +272,9 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
                             isExpanded: true,
                             hint: const Text("Choose Department"),
                             value: selectedDepartmentId,
-                            items: _targets.map((dept) {
+                            items: availableDepts.map((dept) {
                               return DropdownMenuItem<String>(
-                                value: dept["id"],
+                                value: dept["id"].toString(),
                                 child: Text("${dept['name']}"),
                               );
                             }).toList(),
@@ -408,6 +442,17 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
                       child: ElevatedButton(
                         onPressed: (selectedCourseId != null && selectedDepartmentId != null && selectedSection != null && groupName != null && groupName!.isNotEmpty && groupSize > 0) 
                           ? () {
+                              if (groupingMethod == 'GPA Top Distributed') {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("GPA Top Distributed feature is not available yet"),
+                                    behavior: SnackBarBehavior.floating,
+                                    backgroundColor: Colors.orange,
+                                  )
+                                );
+                                return;
+                              }
+
                               int totalStudents = currentSegmentCount;
                               int remainder = totalStudents % groupSize;
 
@@ -415,8 +460,19 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
                                 showDialog(
                                   context: context,
                                   builder: (ctx) => AlertDialog(
-                                    title: const Text("Uneven Distribution"),
-                                    content: Text("The group size does not evenly divide $totalStudents students. One group will have $remainder students. Proceed?"),
+                                  title: const Text("Uneven Distribution"),
+                                  content: RichText(
+                                    text: TextSpan(
+                                      style: const TextStyle(color: Colors.black87, fontSize: 15, fontFamily: 'Inter'),
+                                      children: [
+                                        const TextSpan(text: "The group size does not evenly divide "),
+                                        TextSpan(text: "$totalStudents", style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
+                                        const TextSpan(text: " students. One group will have "),
+                                        TextSpan(text: "$remainder", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent)),
+                                        const TextSpan(text: " students. Proceed?"),
+                                      ],
+                                    ),
+                                  ),
                                     actions: [
                                       TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
                                       ElevatedButton(
@@ -454,11 +510,11 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
     );
   }
 
-  void _finalizeGroupCreation(String title, dynamic course, int size, String method, {String? departmentId, String? section}) async {
+  void _finalizeGroupCreation(String title, String courseId, int size, String method, {String? departmentId, String? section}) async {
     try {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Generating groups..."), behavior: SnackBarBehavior.floating));
       
-      await _apiService.generateGroups(course['id'], size, departmentId: departmentId, section: section);
+      await _apiService.generateGroups(courseId, size, departmentId: departmentId, section: section, method: method, title: title);
       
       _fetchData(); // Reload everything
       
