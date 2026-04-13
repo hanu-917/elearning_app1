@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class InstructorGradingSubmissionsScreen extends StatefulWidget {
-  final Map<String, dynamic> gradingTask;
+  final dynamic gradingTask;
 
   const InstructorGradingSubmissionsScreen({super.key, required this.gradingTask});
 
@@ -10,41 +11,54 @@ class InstructorGradingSubmissionsScreen extends StatefulWidget {
 }
 
 class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSubmissionsScreen> {
-  late List<Map<String, dynamic>> _submissions;
+  final ApiService _apiService = ApiService();
+  List<dynamic> _submissions = [];
+  bool _isLoading = true;
+  String? _error;
+  
   String _filter = 'All'; // All, Needs Grading, Graded
   String _selectedSection = 'All Sections';
-  final List<String> _sections = ['All Sections', '3rd Year Section A', '3rd Year Section B', '4th Year Section A'];
+  List<String> _sections = ['All Sections'];
 
   String _selectedDepartment = 'All Departments';
-  final List<String> _departments = ['All Departments', 'Computer Science', 'Software Engineering', 'Information Systems'];
+  List<String> _departments = ['All Departments'];
 
   @override
   void initState() {
     super.initState();
-    // Generate dummy submissions based on task stats
-    bool isGroup = widget.gradingTask['format'] == 'Group';
-    int submittedCount = widget.gradingTask['submitted'] ?? 0;
-    int gradedCount = widget.gradingTask['graded'] ?? 0;
-    
-    _submissions = List.generate(submittedCount, (index) {
-      String section = _sections[(index % (_sections.length - 1)) + 1];
-      String department = _departments[(index % (_departments.length - 1)) + 1];
+    _fetchSubmissions();
+  }
 
-      bool isGraded = index < gradedCount;
-      return {
-        "id": "s$index",
-        "name": isGroup ? "Group ${index + 1}" : "Student ${index + 1} Name",
-        "initials": isGroup ? "G${index + 1}" : "S${index + 1}",
-        "status": isGraded ? "Graded" : "Needs Grading",
-        "score": isGraded ? (80 + index % 20).toString() : "",
-        "maxScore": "100",
-        "submittedAt": "Oct ${20 + index % 10}, 11:59 PM",
-        "file": "${isGroup ? 'Group_${index+1}' : 'Student_${index+1}'}_submission.pdf",
-        "feedback": isGraded ? "Good job, but watch out for..." : "",
-        "section": section,
-        "department": department,
-      };
+  Future<void> _fetchSubmissions() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
     });
+    try {
+      final data = await _apiService.getSubmissions(widget.gradingTask['id'].toString());
+      if (mounted) {
+        setState(() {
+          _submissions = data;
+          
+          // Extract unique departments and sections for filters
+          for (var sub in data) {
+            String? dept = sub['department_name'];
+            String? sect = sub['section'];
+            if (dept != null && !_departments.contains(dept)) _departments.add(dept);
+            if (sect != null && !_sections.contains(sect)) _sections.add(sect);
+          }
+          
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _showGradingSheet(Map<String, dynamic> submission, int index) {
@@ -146,21 +160,28 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         if (scoreController.text.isNotEmpty) {
-                          setState(() {
-                            if (_submissions[index]['status'] == "Needs Grading") {
-                              // Update global task graded count if needed (this is a simplified logic)
-                              // widget.gradingTask['graded'] += 1; // Cannot mutate final directly without state mgr
+                          try {
+                            double gradeVal = double.parse(scoreController.text);
+                            await _apiService.gradeSubmission(
+                              submission['id'].toString(), 
+                              gradeVal, 
+                              feedbackController.text
+                            );
+
+                            if (mounted) {
+                              Navigator.pop(context);
+                              _fetchSubmissions(); // Refresh the list
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Grade Saved successfully!"), backgroundColor: Colors.green)
+                              );
                             }
-                            _submissions[index]['score'] = scoreController.text;
-                            _submissions[index]['feedback'] = feedbackController.text;
-                            _submissions[index]['status'] = "Graded";
-                          });
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Grade Saved successfully!"), backgroundColor: Colors.green)
-                          );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Error saving grade: $e"), backgroundColor: Colors.red)
+                            );
+                          }
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Please enter a score."))
@@ -189,10 +210,27 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
   Widget build(BuildContext context) {
     Color typeColor = widget.gradingTask['color'] ?? Colors.blue;
     
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        body: Center(child: Text(_error!, style: const TextStyle(color: Colors.red))),
+      );
+    }
+
     final filteredSubmissions = _submissions.where((sub) {
-      bool statusMatches = _filter == 'All' || sub['status'] == _filter;
+      final isGraded = sub['grade'] != null;
+      bool statusMatches = _filter == 'All' || 
+          (_filter == 'Graded' && isGraded) || 
+          (_filter == 'Needs Grading' && !isGraded);
+      
       bool sectionMatches = _selectedSection == 'All Sections' || sub['section'] == _selectedSection;
-      bool departmentMatches = _selectedDepartment == 'All Departments' || sub['department'] == _selectedDepartment;
+      bool departmentMatches = _selectedDepartment == 'All Departments' || sub['department_name'] == _selectedDepartment;
+      
       return statusMatches && sectionMatches && departmentMatches;
     }).toList();
 
@@ -203,18 +241,18 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF05398F), size: 20),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context, true), // Return true to trigger refresh
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              widget.gradingTask['title'], 
+              widget.gradingTask['title'] ?? 'Grading', 
               style: const TextStyle(color: Color(0xFF05398F), fontSize: 18, fontWeight: FontWeight.bold),
               overflow: TextOverflow.ellipsis,
             ),
             Text(
-              widget.gradingTask['course'],
+              "${widget.gradingTask['course_title'] ?? ''} (${widget.gradingTask['course_code'] ?? ''})",
               style: const TextStyle(color: Colors.black54, fontSize: 12),
             )
           ],
@@ -348,8 +386,7 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
                   itemCount: filteredSubmissions.length,
                   itemBuilder: (context, index) {
                     final item = filteredSubmissions[index];
-                    int originalIndex = _submissions.indexOf(item);
-                    return _buildSubmissionCard(item, originalIndex);
+                    return _buildSubmissionCard(item, index);
                   },
                 ),
           ),
@@ -358,8 +395,27 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
     );
   }
 
-  Widget _buildSubmissionCard(Map<String, dynamic> item, int index) {
-    bool isGraded = item['status'] == 'Graded';
+  Widget _buildSubmissionCard(dynamic item, int index) {
+    bool isGraded = item['grade'] != null;
+    bool isGroup = item['group_id'] != null;
+    
+    String displayName = isGroup 
+        ? (item['group_name'] ?? 'Unknown Group')
+        : "${item['first_name'] ?? ''} ${item['last_name'] ?? ''}";
+    
+    String initials = isGroup 
+        ? (item['group_name']?.toString().split('-').last.trim() ?? 'G')
+        : (item['first_name']?[0] ?? 'S');
+
+    String submittedAt = 'N/A';
+    if (item['submission_date'] != null) {
+      try {
+        DateTime dt = DateTime.parse(item['submission_date']).toLocal();
+        submittedAt = "${_getMonth(dt.month)} ${dt.day}, ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}";
+      } catch (_) {}
+    }
+
+    String fileName = item['file_path']?.toString().split('/').last ?? 'submission.file';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -393,7 +449,7 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
                       ),
                       child: Center(
                         child: Text(
-                          item['initials'], 
+                          initials, 
                           style: const TextStyle(color: Color(0xFF09AEF5), fontWeight: FontWeight.bold, fontSize: 14)
                         )
                       ),
@@ -403,16 +459,16 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(item['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87), overflow: TextOverflow.ellipsis),
+                          Text(displayName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87), overflow: TextOverflow.ellipsis),
                           const SizedBox(height: 2),
-                          Text("${item['department']} - ${item['section']}", style: const TextStyle(fontSize: 12, color: Colors.black54), overflow: TextOverflow.ellipsis),
+                          Text("${item['department_name'] ?? ''} - ${item['section'] ?? ''}", style: const TextStyle(fontSize: 12, color: Colors.black54), overflow: TextOverflow.ellipsis),
                           const SizedBox(height: 4),
                           Row(
                             children: [
                               const Icon(Icons.access_time_rounded, size: 12, color: Colors.black45),
                               const SizedBox(width: 4),
                               Expanded(
-                                child: Text(item['submittedAt'], style: const TextStyle(color: Colors.black45, fontSize: 12), overflow: TextOverflow.ellipsis),
+                                child: Text("Submitted: $submittedAt", style: const TextStyle(color: Colors.black45, fontSize: 12), overflow: TextOverflow.ellipsis),
                               ),
                             ],
                           ),
@@ -435,7 +491,7 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
                       const Icon(Icons.check_circle_rounded, color: Colors.green, size: 14),
                       const SizedBox(width: 4),
                       Text(
-                        "${item['score']} / ${item['maxScore']}",
+                        "${item['grade']} / 100",
                         style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13),
                       ),
                     ],
@@ -466,20 +522,24 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
             ),
             child: Row(
               children: [
-                const Icon(Icons.picture_as_pdf_rounded, color: Colors.redAccent, size: 24),
+                Icon(
+                  fileName.toLowerCase().endsWith('.pdf') ? Icons.picture_as_pdf_rounded : Icons.description_rounded, 
+                  color: fileName.toLowerCase().endsWith('.pdf') ? Colors.redAccent : Colors.blueAccent, 
+                  size: 24
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item['file'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87), overflow: TextOverflow.ellipsis),
-                      const Text("1.2 MB", style: TextStyle(color: Colors.black54, fontSize: 11)),
+                      Text(fileName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87), overflow: TextOverflow.ellipsis),
+                      const Text("Click to view", style: TextStyle(color: Colors.black54, fontSize: 11)),
                     ],
                   ),
                 ),
                 IconButton(
                   onPressed: () {},
-                  icon: const Icon(Icons.download_rounded, color: Color(0xFF05398F)),
+                  icon: const Icon(Icons.remove_red_eye_rounded, color: Color(0xFF05398F)),
                   constraints: const BoxConstraints(),
                   padding: EdgeInsets.zero,
                 )
@@ -509,5 +569,10 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
         ],
       ),
     );
+  }
+
+  String _getMonth(int month) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return months[month - 1];
   }
 }
