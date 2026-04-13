@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
+import 'package:intl/intl.dart';
+import 'chat_detail_screen.dart';
 
 class StudentInboxScreen extends StatefulWidget {
   const StudentInboxScreen({super.key});
@@ -8,7 +11,44 @@ class StudentInboxScreen extends StatefulWidget {
 }
 
 class _StudentInboxScreenState extends State<StudentInboxScreen> {
+  final ApiService _apiService = ApiService();
   bool isAnnounceSelected = true; 
+  
+  List<dynamic> _announcements = [];
+  List<dynamic> _chats = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final ann = await _apiService.getAnnouncements('student');
+      final inbox = await _apiService.getInbox();
+      if (mounted) {
+        setState(() {
+          _announcements = ann;
+          _chats = inbox;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,36 +61,29 @@ class _StudentInboxScreenState extends State<StudentInboxScreen> {
         title: const Text("Inbox", style: TextStyle(color: Color(0xFF05398F), fontSize: 24, fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF05398F)), 
+            onPressed: _fetchData
+          ),
+          IconButton(
             icon: const Icon(Icons.search_rounded, color: Color(0xFF05398F)), 
             onPressed: () {}
           ),
         ],
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 10),
-          
-          // 1. Custom Toggle Switch (Announcements / Messages)
-          _buildToggleSwitch(),
-          
-          const SizedBox(height: 20),
-
-          // 2. Announcements List (Students usually read more announcements than standard chat)
-          Expanded(
-            child: ListView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : _error != null
+          ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
+          : Column(
               children: [
-                _buildAnnouncementTile("Dr. Alemu", "Midterm Exam Schedule Changed", "CoSc4051", "14:59", Colors.purple),
-                _buildAnnouncementTile("Prof. Bekele", "Assignment 2 Uploaded", "CoSc4022", "Yesterday", Colors.orange),
-                _buildAnnouncementTile("Registrar Office", "Course add/drop deadline approachin...", "Global", "Yesterday", Colors.blue),
-                _buildAnnouncementTile("Dr. Tadesse", "No Class This Friday", "CoSc4111", "Mon", Colors.red),
-                _buildAnnouncementTile("Dr. Yonas", "Quiz 1 Results Available", "CoSc4021", "Mon", Colors.green),
+                const SizedBox(height: 10),
+                _buildToggleSwitch(),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: isAnnounceSelected ? _buildAnnouncementsList() : _buildChatList(),
+                ),
               ],
             ),
-          ),
-        ],
-      ),
       // 3. Floating Action Button for New Message
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
@@ -118,6 +151,137 @@ class _StudentInboxScreenState extends State<StudentInboxScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAnnouncementsList() {
+    if (_announcements.isEmpty) {
+      return const Center(child: Text("No announcements", style: TextStyle(color: Colors.black54)));
+    }
+    return ListView.builder(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: _announcements.length,
+      itemBuilder: (context, index) {
+        final a = _announcements[index];
+        final sender = "${a['instructor_first_name'] ?? ''} ${a['instructor_last_name'] ?? ''}";
+        final title = a['title'] ?? '';
+        final course = a['course_code'] ?? 'Global';
+        final time = _formatTime(a['created_at']);
+        
+        final List<Color> colors = [Colors.purple, Colors.orange, Colors.blue, Colors.red, Colors.green];
+        final color = colors[index % colors.length];
+
+        return _buildAnnouncementTile(sender, title, course, time, color);
+      },
+    );
+  }
+
+  Widget _buildChatList() {
+    if (_chats.isEmpty) {
+      return const Center(child: Text("No messages", style: TextStyle(color: Colors.black54)));
+    }
+    return ListView.builder(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      itemCount: _chats.length,
+      itemBuilder: (context, index) {
+        final chat = _chats[index];
+        final name = "${chat['first_name'] ?? ''} ${chat['last_name'] ?? ''}";
+        final message = chat['content'] ?? '';
+        final time = _formatTime(chat['created_at']);
+        final isUnread = chat['is_read'] == false;
+        
+        final List<Color> colors = [Colors.blue, Colors.purple, Colors.orange, Colors.green, Colors.red];
+        final color = colors[name.length % colors.length];
+
+        return _buildChatTile(name, message, isUnread ? "1" : "", time, color, chat['conversation_user_id'].toString());
+      },
+    );
+  }
+
+  String _formatTime(String? dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final date = DateTime.parse(dateStr).toLocal();
+      final now = DateTime.now();
+      if (date.day == now.day && date.month == now.month && date.year == now.year) {
+        return DateFormat('HH:mm').format(date);
+      } else if (now.difference(date).inDays < 7) {
+        return DateFormat('E').format(date);
+      } else {
+        return DateFormat('MMM d').format(date);
+      }
+    } catch (_) {
+      return '';
+    }
+  }
+
+  Widget _buildChatTile(String name, String message, String count, String time, Color avatarColor, String userId) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 4))],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => ChatDetailScreen(userId: userId, name: name)));
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 26,
+                  backgroundColor: avatarColor.withOpacity(0.15),
+                  child: Text(name[0], style: TextStyle(color: avatarColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87)),
+                          Text(time, style: TextStyle(color: count.isNotEmpty ? const Color(0xFF09AEF5) : Colors.black38, fontSize: 12, fontWeight: count.isNotEmpty ? FontWeight.bold : FontWeight.normal)),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              message, 
+                              maxLines: 1, 
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(color: count.isNotEmpty ? Colors.black87 : Colors.black54, fontWeight: count.isNotEmpty ? FontWeight.w600 : FontWeight.normal),
+                            ),
+                          ),
+                          if (count.isNotEmpty)
+                            Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(color: Color(0xFF09AEF5), shape: BoxShape.circle),
+                              child: Text(count, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
+import 'package:intl/intl.dart';
+import 'chat_detail_screen.dart';
 
 class InstructorInboxScreen extends StatefulWidget {
   const InstructorInboxScreen({super.key});
@@ -7,8 +10,47 @@ class InstructorInboxScreen extends StatefulWidget {
   State<InstructorInboxScreen> createState() => _InstructorInboxScreenState();
 }
 
+
 class _InstructorInboxScreenState extends State<InstructorInboxScreen> {
+  final ApiService _apiService = ApiService();
   bool isChatSelected = true; 
+  
+  List<dynamic> _chats = [];
+  List<dynamic> _announcements = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final chats = await _apiService.getInbox();
+      final announcements = await _apiService.getAnnouncements('instructor');
+      
+      if (mounted) {
+        setState(() {
+          _chats = chats;
+          _announcements = announcements;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,29 +63,38 @@ class _InstructorInboxScreenState extends State<InstructorInboxScreen> {
         title: const Text("Inbox", style: TextStyle(color: Color(0xFF05398F), fontSize: 24, fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF05398F)), 
+            onPressed: _fetchData
+          ),
+          IconButton(
             icon: const Icon(Icons.search_rounded, color: Color(0xFF05398F)), 
             onPressed: () {}
           ),
         ],
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 10),
-          
-          // 1. Custom Toggle Switch (Chat / Announce)
-          _buildToggleSwitch(),
-          
-          const SizedBox(height: 20),
-
-          // 2. Dynamic Content List
-          Expanded(
-            child: isChatSelected ? _buildChatList() : _buildAnnouncementsList(),
-          ),
-        ],
-      ),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : _error != null
+          ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
+          : Column(
+              children: [
+                const SizedBox(height: 10),
+                _buildToggleSwitch(),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: isChatSelected ? _buildChatList() : _buildAnnouncementsList(),
+                ),
+              ],
+            ),
       // 3. Floating Action Button for New Message
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          if (isChatSelected) {
+            // New Message - User Search
+          } else {
+            _showNewAnnouncementModal();
+          }
+        },
         backgroundColor: const Color(0xFF09AEF5),
         elevation: 4,
         child: Icon(
@@ -52,6 +103,100 @@ class _InstructorInboxScreenState extends State<InstructorInboxScreen> {
           size: 28
         ),
       ),
+    );
+  }
+
+  void _showNewAnnouncementModal() {
+    final titleController = TextEditingController();
+    final contentController = TextEditingController();
+    String? selectedCard;
+    
+    // We need courses to select from
+    // For now let's assume we can fetch them or use a placeholder
+    // I'll add a simple course selector if I have course data
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          top: 30, left: 24, right: 24
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30))
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("New Announcement", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
+              const SizedBox(height: 25),
+              TextField(
+                controller: titleController,
+                decoration: InputDecoration(
+                  labelText: "Title",
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))
+                ),
+              ),
+              const SizedBox(height: 15),
+              TextField(
+                controller: contentController,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  labelText: "Content",
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))
+                ),
+              ),
+              const SizedBox(height: 25),
+              SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    if (titleController.text.isNotEmpty && contentController.text.isNotEmpty) {
+                       // We need a course ID. For now I'll just use a 'Global' or the first course found.
+                       // In a real app, we'd have a dropdown here.
+                       try {
+                         // Fetch instructor courses first if not available
+                         final courses = await _apiService.getInstructorCourses();
+                         if (courses.isEmpty) throw Exception("No courses to announce to");
+                         
+                         await _apiService.createAnnouncement(
+                           courses[0]['id'].toString(), 
+                           titleController.text, 
+                           contentController.text
+                         );
+                         
+                         if (mounted) {
+                           Navigator.pop(context);
+                           _fetchData();
+                           ScaffoldMessenger.of(context).showSnackBar(
+                             const SnackBar(content: Text("Announcement posted!"), backgroundColor: Colors.green)
+                           );
+                         }
+                       } catch (e) {
+                         ScaffoldMessenger.of(context).showSnackBar(
+                           SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red)
+                         );
+                       }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF09AEF5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                  ),
+                  child: const Text("Post Announcement", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 30),
+            ],
+          ),
+        ),
+      )
     );
   }
 
@@ -116,7 +261,7 @@ class _InstructorInboxScreenState extends State<InstructorInboxScreen> {
     );
   }
 
-  Widget _buildChatTile(String name, String message, String count, String time, Color avatarColor) {
+  Widget _buildChatTile(String name, String message, String count, String time, Color avatarColor, String userId) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -134,7 +279,9 @@ class _InstructorInboxScreenState extends State<InstructorInboxScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {},
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => ChatDetailScreen(userId: userId, name: name)));
+          },
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -188,56 +335,93 @@ class _InstructorInboxScreenState extends State<InstructorInboxScreen> {
     );
   }
   Widget _buildChatList() {
-    return ListView(
+    if (_chats.isEmpty) {
+      return const Center(child: Text("No chats yet", style: TextStyle(color: Colors.black54)));
+    }
+    return ListView.builder(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      children: [
-        _buildChatTile("Natasha", "Hi, Good Evening Prof!", "3", "14:59", Colors.purple),
-        _buildChatTile("Alex", "I Just Finished It..!", "2", "06:35", Colors.orange),
-        _buildChatTile("John", "How are you?", "", "08:10", Colors.blue),
-        _buildChatTile("Mia", "Could we get an extension?", "5", "Yesterday", Colors.green),
-        _buildChatTile("Maria", "Understood, thank you.", "", "Yesterday", Colors.red),
-        _buildChatTile("Tiya", "When is the next lecture?", "1", "Mon", Colors.teal),
-        _buildChatTile("Manisha", "I've uploaded my assignment.", "", "Mon", Colors.indigo),
-      ],
+      itemCount: _chats.length,
+      itemBuilder: (context, index) {
+        final chat = _chats[index];
+        final name = "${chat['first_name'] ?? ''} ${chat['last_name'] ?? ''}";
+        final message = chat['content'] ?? '';
+        final time = _formatTime(chat['created_at']);
+        final isUnread = chat['is_read'] == false;
+        
+        // Use a consistent color based on the name
+        final List<Color> avatarColors = [Colors.blue, Colors.purple, Colors.orange, Colors.green, Colors.red, Colors.teal, Colors.indigo];
+        final color = avatarColors[name.length % avatarColors.length];
+
+        return _buildChatTile(
+          name, 
+          message, 
+          isUnread ? "1" : "", // Backend currently doesn't provide unread count per chat, just a sample logic
+          time, 
+          color,
+          chat['conversation_user_id'].toString()
+        );
+      },
     );
   }
 
   Widget _buildAnnouncementsList() {
-    return ListView(
+    if (_announcements.isEmpty) {
+      return const Center(child: Text("No announcements yet", style: TextStyle(color: Colors.black54)));
+    }
+    return ListView.builder(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      children: [
-        _buildAnnouncementTile(
-          "Final Exam Schedule", 
-          "The final exam for ITCS 414 will be held on Dec 15th at 9:00 AM.", 
-          "2 hrs ago", 
-          Icons.event_note_rounded,
-          Colors.orange
-        ),
-        _buildAnnouncementTile(
-          "Assignment 3 Grades Posted", 
-          "Grades for Assignment 3 have been published to the portal. Please review the feedback.", 
-          "Yesterday", 
-          Icons.grade_rounded,
-          Colors.green
-        ),
-        _buildAnnouncementTile(
-          "Guest Speaker Tomorrow", 
-          "We will have a guest speaker from Google joining our class tomorrow. Attendance is mandatory.", 
-          "Oct 24", 
-          Icons.campaign_rounded,
-          Colors.blue
-        ),
-        _buildAnnouncementTile(
-          "Syllabus Update", 
-          "Please check the updated syllabus for changes regarding the final project requirements.", 
-          "Oct 15", 
-          Icons.info_outline_rounded,
-          const Color(0xFF09AEF5)
-        ),
-      ],
+      itemCount: _announcements.length,
+      itemBuilder: (context, index) {
+        final a = _announcements[index];
+        final title = a['title'] ?? 'No Title';
+        final description = a['content'] ?? '';
+        final time = _formatTime(a['created_at']);
+        final courseCode = a['course_code'] ?? '';
+        
+        return _buildAnnouncementTile(
+          title, 
+          description, 
+          time, 
+          _getAnnouncementIcon(title),
+          _getAnnouncementColor(title)
+        );
+      },
     );
+  }
+
+  String _formatTime(String? dateStr) {
+    if (dateStr == null) return '';
+    try {
+      final date = DateTime.parse(dateStr).toLocal();
+      final now = DateTime.now();
+      if (date.day == now.day && date.month == now.month && date.year == now.year) {
+        return DateFormat('HH:mm').format(date);
+      } else if (now.difference(date).inDays < 7) {
+        return DateFormat('E').format(date);
+      } else {
+        return DateFormat('MMM d').format(date);
+      }
+    } catch (_) {
+      return '';
+    }
+  }
+
+  IconData _getAnnouncementIcon(String title) {
+    final t = title.toLowerCase();
+    if (t.contains('exam') || t.contains('schedule')) return Icons.event_note_rounded;
+    if (t.contains('grade')) return Icons.grade_rounded;
+    if (t.contains('speaker') || t.contains('mandatory')) return Icons.campaign_rounded;
+    return Icons.info_outline_rounded;
+  }
+
+  Color _getAnnouncementColor(String title) {
+    final t = title.toLowerCase();
+    if (t.contains('exam')) return Colors.orange;
+    if (t.contains('grade')) return Colors.green;
+    if (t.contains('speaker')) return Colors.blue;
+    return const Color(0xFF09AEF5);
   }
 
   Widget _buildAnnouncementTile(String title, String description, String time, IconData icon, Color iconColor) {
