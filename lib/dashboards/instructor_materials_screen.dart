@@ -41,31 +41,46 @@ class _InstructorMaterialsScreenState extends State<InstructorMaterialsScreen> {
   }
 
   Future<void> _fetchData() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _error = null;
     });
     
     try {
-      final materials = await _apiService.getInstructorMaterials();
-      final courses = await _apiService.getInstructorCourses();
-      final targetsData = await _apiService.getInstructorTargets();
+      // Fetch all required data in parallel with timeouts
+      final results = await Future.wait([
+        _apiService.getInstructorMaterials().timeout(const Duration(seconds: 10)),
+        _apiService.getInstructorCourses().timeout(const Duration(seconds: 10)),
+        _apiService.getInstructorTargets().timeout(const Duration(seconds: 10)),
+      ]);
+
+      final materials = results[0] as List<dynamic>;
+      final courses = results[1] as List<dynamic>;
+      final targetsData = results[2];
       
-      // The backend now returns a List of {id, name, sections: []}
+      // The backend returns a List of {id, name, sections: []}
       List<dynamic> targets = (targetsData is List) ? (targetsData as List) : [];
       
-      setState(() {
-        _materials = materials;
-        _courses = courses;
-        _targets = targets;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _materials = materials;
+          _courses = courses;
+          _targets = targets;
+        });
+      }
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceAll('Exception: ', '');
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

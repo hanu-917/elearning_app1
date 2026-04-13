@@ -26,17 +26,24 @@ class _InstructorCoursesScreenState extends State<InstructorCoursesScreen> {
 
   Future<void> _fetchCourses() async {
     try {
-      final courses = await _apiService.getInstructorCourses();
-      setState(() {
-        _courses = courses;
-        _isLoading = false;
-      });
+      final courses = await _apiService.getInstructorCourses().timeout(const Duration(seconds: 10));
+      if (mounted) {
+        setState(() {
+          _courses = courses;
+        });
+      }
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceAll('Exception: ', '');
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
