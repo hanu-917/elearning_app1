@@ -242,11 +242,14 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> generateGroups(String courseId, int studentsPerGroup) async {
+  Future<Map<String, dynamic>> generateGroups(String courseId, int studentsPerGroup, {String? departmentId}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
       if (token == null) throw Exception("You are not logged in");
+
+      final Map<String, dynamic> body = {"studentsPerGroup": studentsPerGroup};
+      if (departmentId != null) body["departmentId"] = departmentId;
 
       final response = await http.post(
         Uri.parse('$baseUrl/groups/$courseId/generate'),
@@ -254,7 +257,7 @@ class ApiService {
           "Content-Type": "application/json",
           "Authorization": "Bearer $token",
         },
-        body: jsonEncode({"studentsPerGroup": studentsPerGroup}),
+        body: jsonEncode(body),
       );
 
       final data = jsonDecode(response.body);

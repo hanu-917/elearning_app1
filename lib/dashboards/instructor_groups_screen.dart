@@ -13,6 +13,7 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
   
   List<dynamic> _courses = [];
   List<dynamic> _groups = [];
+  List<dynamic> _targets = [];
   bool _isLoading = true;
   String? _error;
 
@@ -30,8 +31,14 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
     });
 
     try {
-      // Add a timeout to prevent hanging indefinitely
-      final courses = await _apiService.getInstructorCourses().timeout(const Duration(seconds: 10));
+      // Fetch courses and targets in parallel
+      final results = await Future.wait([
+        _apiService.getInstructorCourses().timeout(const Duration(seconds: 10)),
+        _apiService.getInstructorTargets().timeout(const Duration(seconds: 10)),
+      ]);
+
+      final courses = results[0] as List<dynamic>;
+      final targets = results[1] as List<dynamic>;
       
       // Fetch groups for all courses in parallel with individual timeouts
       final groupFutures = courses.map((course) => 
@@ -58,6 +65,7 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
       if (mounted) {
         setState(() {
           _courses = courses;
+          _targets = targets;
           _groups = allGroups;
         });
       }
@@ -80,6 +88,7 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
 
   void _showCreateGroupBottomSheet() {
     String? selectedCourseId;
+    String? selectedDepartmentId;
     String? groupName;
     int groupSize = 5;
     String groupingMethod = 'Random';
@@ -158,7 +167,7 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
                           items: _courses.map((course) {
                             return DropdownMenuItem<String>(
                               value: course["id"],
-                              child: Text("${course['title']} (${course['course_code']})"),
+                              child: Text("${course['title']}"),
                             );
                           }).toList(),
                           onChanged: (val) {
@@ -169,6 +178,61 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
                         ),
                       ),
                     ),
+                    const SizedBox(height: 20),
+
+                    const Text("Select Department (Optional)", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 15),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4F7FC),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          hint: const Text("All Departments"),
+                          value: selectedDepartmentId,
+                          items: _targets.map((dept) {
+                            return DropdownMenuItem<String>(
+                              value: dept["id"],
+                              child: Text("${dept['name']}"),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            setSheetState(() {
+                              selectedDepartmentId = val;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+
+                    if (selectedCourseId != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE3F2FD),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.people_alt_rounded, color: Color(0xFF09AEF5), size: 20),
+                            const SizedBox(width: 10),
+                            const Text(
+                              "Total Enrolled Students:", 
+                              style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600)
+                            ),
+                            const Spacer(),
+                            Text(
+                              "${_courses.firstWhere((c) => c["id"] == selectedCourseId)["student_count"] ?? 0}",
+                              style: const TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 20),
 
                     Row(
@@ -267,8 +331,32 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
                         onPressed: (selectedCourseId != null && groupName != null && groupName!.isNotEmpty && groupSize > 0) 
                           ? () {
                               final course = _courses.firstWhere((c) => c["id"] == selectedCourseId);
-                              Navigator.pop(context); // Close sheet
-                              _finalizeGroupCreation(groupName!, course, groupSize, groupingMethod);
+                              int totalStudents = course["student_count"] ?? 0;
+                              int remainder = totalStudents % groupSize;
+
+                              if (remainder != 0) {
+                                showDialog(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text("Uneven Distribution"),
+                                    content: Text("The group size does not evenly divide $totalStudents students. One group will have $remainder students. Proceed?"),
+                                    actions: [
+                                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancel")),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          Navigator.pop(ctx);
+                                          Navigator.pop(context);
+                                          _finalizeGroupCreation(groupName!, course, groupSize, groupingMethod, departmentId: selectedDepartmentId);
+                                        },
+                                        child: const Text("Continue"),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              } else {
+                                Navigator.pop(context); // Close sheet
+                                _finalizeGroupCreation(groupName!, course, groupSize, groupingMethod, departmentId: selectedDepartmentId);
+                              }
                           } : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF09AEF5),
@@ -289,11 +377,11 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
     );
   }
 
-  void _finalizeGroupCreation(String title, dynamic course, int size, String method) async {
+  void _finalizeGroupCreation(String title, dynamic course, int size, String method, {String? departmentId}) async {
     try {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Generating groups..."), behavior: SnackBarBehavior.floating));
       
-      await _apiService.generateGroups(course['id'], size);
+      await _apiService.generateGroups(course['id'], size, departmentId: departmentId);
       
       _fetchData(); // Reload everything
       
