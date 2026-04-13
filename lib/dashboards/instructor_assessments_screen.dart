@@ -1,91 +1,93 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
+import 'package:intl/intl.dart';
 
 class InstructorAssessmentsScreen extends StatefulWidget {
-  const InstructorAssessmentsScreen({super.key});
+  final String? initialCourseId;
+  const InstructorAssessmentsScreen({super.key, this.initialCourseId});
 
   @override
   State<InstructorAssessmentsScreen> createState() => _InstructorAssessmentsScreenState();
 }
 
 class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScreen> {
+  final ApiService _apiService = ApiService();
   String _selectedFilter = 'All';
   final List<String> _filters = ['All', 'Assignment', 'Project', 'Presentation'];
 
-  // Dummy data for courses/classes
-  final List<Map<String, dynamic>> _classes = [
-    {
-      "id": "c1", "name": "Computer Security (CoSc4051)", "initials": "CS", "color": Colors.blue,
-      "sections": [
-        {"id": "c1_s1", "name": "3rd Year Section A"},
-        {"id": "c1_s2", "name": "3rd Year Section B"}
-      ]
-    },
-    {
-      "id": "c2", "name": "Compiler Design (CoSc4022)", "initials": "CD", "color": Colors.purple,
-      "sections": [
-        {"id": "c2_s1", "name": "3rd Year Section A"}
-      ]
-    },
-    {
-      "id": "c3", "name": "Complexity Theory (CoSc4021)", "initials": "CT", "color": Colors.orange,
-      "sections": [
-        {"id": "c3_s1", "name": "4th Year Section A"},
-        {"id": "c3_s2", "name": "4th Year Section B"}
-      ]
-    },
-    {
-      "id": "c4", "name": "Research Methods (CoSc4111)", "initials": "RM", "color": Colors.green,
-      "sections": [
-        {"id": "c4_s1", "name": "4th Year Section C"}
-      ]
-    },
-  ];
+  List<dynamic> _classes = [];
+  List<dynamic> _sectionsList = [];
+  List<dynamic> _assessments = [];
+  bool _isLoading = true;
+  String? _error;
 
-  final List<Map<String, dynamic>> _sectionsList = [
-    {"id": "s1", "course": "Computer Security (CoSc4051)", "name": "3rd Year Section A", "students": 45},
-    {"id": "s2", "course": "Computer Security (CoSc4051)", "name": "3rd Year Section B", "students": 42},
-    {"id": "s3", "course": "Compiler Design (CoSc4022)", "name": "3rd Year Section A", "students": 50},
-    {"id": "s4", "course": "Complexity Theory (CoSc4021)", "name": "4th Year Section A", "students": 38},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
 
-  final List<Map<String, dynamic>> _existingGroups = [
-    {"id": "g1", "title": "Project Phase 1", "course": "Computer Security", "section": "3rd Year Section A", "groupsCount": 9, "date": "Oct 10"},
-    {"id": "g2", "title": "Assignment 2 DB Design", "course": "Compiler Design", "section": "3rd Year Section A", "groupsCount": 10, "date": "Oct 15"},
-  ];
+  Future<void> _fetchData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      print("Fetching courses...");
+      final courses = await _apiService.getInstructorCourses().timeout(const Duration(seconds: 15));
+      print("Fetched ${courses.length} courses.");
+      
+      List<Map<String, dynamic>> processedClasses = [];
+      for (var course in courses) {
+        print("Fetching stats for course ${course['id']}...");
+        final stats = await _apiService.getCourseEnrollmentStats(course['id'].toString()).timeout(const Duration(seconds: 15));
+        
+        processedClasses.add({
+          "id": course['id'].toString(),
+          "name": "${course['title']} (${course['course_code']})",
+          "initials": course['title'].toString().split(' ').map((e) => e.isNotEmpty ? e[0].toUpperCase() : '').take(2).join(),
+          "color": _getCourseColor(course['course_code']),
+          "sections": stats.map((s) => {
+            "id": "${course['id']}_${s['section']}",
+            "name": "${s['department_name']} - Section ${s['section']}",
+            "students": s['student_count']
+          }).toList()
+        });
+      }
 
-  // Dummy data
-  final List<Map<String, dynamic>> _assessments = [
-    {
-      "id": "a1",
-      "title": "Database Design Project",
-      "type": "Project",
-      "format": "Group",
-      "deadline": "Oct 30, 11:59 PM",
-      "description": "Design a relational database schema for a university management system.",
-      "hasFile": true,
-      "color": Colors.purple
-    },
-    {
-      "id": "a2",
-      "title": "Midterm Presentation",
-      "type": "Presentation",
-      "format": "Individual",
-      "deadline": "Nov 5, 2:00 PM",
-      "description": "Present your project proposal to the class.",
-      "hasFile": false,
-      "color": Colors.orange
-    },
-    {
-      "id": "a3",
-      "title": "Homework 1: SQL Queries",
-      "type": "Assignment",
-      "format": "Individual",
-      "deadline": "Oct 25, 11:59 PM",
-      "description": "Write SQL queries to solve the problems listed in the attached document.",
-      "hasFile": true,
-      "color": Colors.blue
-    },
-  ];
+      // Fetch all assessments for all courses
+      print("Fetching assessments for all courses...");
+      List<dynamic> allAssessments = [];
+      for (var course in courses) {
+        final assessments = await _apiService.getAssessments(course['id'].toString()).timeout(const Duration(seconds: 15));
+        allAssessments.addAll(assessments);
+      }
+      print("Fetched ${allAssessments.length} assessments total.");
+
+      if (mounted) {
+        setState(() {
+          _classes = processedClasses;
+          _assessments = allAssessments;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("Error in _fetchData: $e");
+      if (mounted) {
+        setState(() {
+          _error = e.toString().replaceAll('Exception: ', '');
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Color _getCourseColor(String? code) {
+    if (code == null) return Colors.blue;
+    final int hash = code.hashCode;
+    final List<Color> colors = [Colors.blue, Colors.purple, Colors.orange, Colors.green, Colors.red, Colors.teal];
+    return colors[hash % colors.length];
+  }
 
   void _showCreateAssessmentSheet() {
     String selectedType = 'Assignment';
@@ -159,16 +161,28 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
                       Wrap(
                         spacing: 10,
                         children: ['Assignment', 'Project', 'Presentation'].map((type) {
-                          return ChoiceChip(
-                            label: Text(type),
-                            selected: selectedType == type,
-                            onSelected: (selected) {
-                              setSheetState(() => selectedType = type);
-                            },
-                            selectedColor: const Color(0xFF09AEF5).withValues(alpha: 0.2),
-                            labelStyle: TextStyle(
-                              color: selectedType == type ? const Color(0xFF05398F) : Colors.black87,
-                              fontWeight: selectedType == type ? FontWeight.bold : FontWeight.normal,
+                          final isSelected = selectedType == type;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8, bottom: 8),
+                            child: InkWell(
+                              onTap: () => setSheetState(() => selectedType = type),
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? const Color(0xFF09AEF5) : const Color(0xFFF4F7FC),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: isSelected ? Colors.transparent : Colors.black12),
+                                ),
+                                child: Text(
+                                  type,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : Colors.black54,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
                             ),
                           );
                         }).toList(),
@@ -181,28 +195,53 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
                       Wrap(
                         spacing: 10,
                         children: ['Individual', 'Group'].map((format) {
-                          return ChoiceChip(
-                            label: Text(format),
-                            selected: selectedFormat == format,
-                            onSelected: (selected) {
-                              setSheetState(() {
-                                selectedFormat = format;
-                                if (format == 'Individual') {
-                                  selectedGroup = null;
+                          final isSelected = selectedFormat == format;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8, bottom: 8),
+                            child: InkWell(
+                              onTap: () async {
+                                setSheetState(() {
+                                  selectedFormat = format;
+                                  if (format == 'Individual') {
+                                    selectedGroup = null;
+                                  }
+                                });
+                                
+                                if (format == 'Group' && selectedCourseId != null) {
+                                  try {
+                                    final groups = await _apiService.getExistingGroups(selectedCourseId!);
+                                    setSheetState(() {
+                                      _sectionsList = groups;
+                                    });
+                                  } catch (e) {
+                                     print("Error fetching groups: $e");
+                                  }
                                 }
-                              });
-                            },
-                            selectedColor: const Color(0xFF09AEF5).withValues(alpha: 0.2),
-                            labelStyle: TextStyle(
-                              color: selectedFormat == format ? const Color(0xFF05398F) : Colors.black87,
-                              fontWeight: selectedFormat == format ? FontWeight.bold : FontWeight.normal,
+                              },
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? const Color(0xFF09AEF5) : const Color(0xFFF4F7FC),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: isSelected ? Colors.transparent : Colors.black12),
+                                ),
+                                child: Text(
+                                  format,
+                                  style: TextStyle(
+                                    color: isSelected ? Colors.white : Colors.black54,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
                             ),
                           );
                         }).toList(),
                       ),
                       const SizedBox(height: 16),
                       if (selectedFormat == 'Group') ...[
-                        const Text("Select Group", style: TextStyle(fontWeight: FontWeight.bold)),
+                        const Text("Select Group Batch", style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
                         Row(
                           children: [
@@ -216,14 +255,17 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
                                 child: DropdownButtonHideUnderline(
                                   child: DropdownButton<String>(
                                     isExpanded: true,
-                                    hint: const Text("Choose from created groups"),
+                                    hint: const Text("Choose from created group batches"),
                                     value: selectedGroup,
-                                    items: _existingGroups.map((g) {
-                                      return DropdownMenuItem<String>(
-                                        value: g["id"],
-                                        child: Text(g["title"] ?? "Unnamed Group"),
-                                      );
-                                    }).toList(),
+                                    items: [
+                                      // Extract unique batch names from fetched groups
+                                      ...(_sectionsList as List).map((g) => g['batch_name']).toSet().where((b) => b != null).map((batch) {
+                                        return DropdownMenuItem<String>(
+                                          value: batch.toString(),
+                                          child: Text(batch.toString()),
+                                        );
+                                      })
+                                    ],
                                     onChanged: (val) {
                                       setSheetState(() => selectedGroup = val);
                                     },
@@ -234,7 +276,13 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
                             const SizedBox(width: 10),
                             ElevatedButton(
                               onPressed: () {
-                                _showCreateGroupBottomSheet(setSheetState);
+                                if (selectedCourseId != null) {
+                                  _showCreateGroupBottomSheet(setSheetState, selectedCourseId!);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text("Please select a course first"))
+                                  );
+                                }
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF09AEF5).withValues(alpha: 0.1),
@@ -476,7 +524,7 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
                         width: double.infinity,
                         height: 55,
                         child: ElevatedButton(
-                          onPressed: () {
+                          onPressed: () async {
                             if (titleController.text.isEmpty || selectedDate == null || selectedSections.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text("Title, Deadline and at least one Section are required"))
@@ -490,24 +538,35 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
                               return;
                             }
                             
-                            setState(() {
-                              const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                              _assessments.add({
-                                "id": "a${_assessments.length + 1}",
-                                "title": titleController.text,
-                                "type": selectedType,
-                                "format": selectedFormat,
-                                "deadline": "${months[selectedDate!.month - 1]} ${selectedDate!.day}, ${selectedDate!.hour > 12 ? selectedDate!.hour - 12 : selectedDate!.hour == 0 ? 12 : selectedDate!.hour}:${selectedDate!.minute.toString().padLeft(2, '0')} ${selectedDate!.hour >= 12 ? 'PM' : 'AM'}",
-                                "description": descController.text,
-                                "hasFile": false,
-                                "sections": "\${selectedSections.length} Sections Assigned",
-                                "color": selectedType == 'Project' ? Colors.purple : (selectedType == 'Presentation' ? Colors.orange : Colors.blue),
-                              });
-                            });
-                            Navigator.pop(context);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Assessment Created Successfully!"), backgroundColor: Colors.green)
-                            );
+                            try {
+                              final assessmentData = {
+                                'course_id': selectedCourseId,
+                                'title': titleController.text,
+                                'description': descController.text,
+                                'due_date': selectedDate!.toIso8601String(),
+                                'is_group_assignment': selectedFormat == 'Group',
+                              };
+
+                              // filePath is not yet implemented in the UI for real selection, 
+                              // but the sheet has an "Attach File" button that currently does nothing.
+                              // For now, we'll just send the fields.
+                              
+                              await _apiService.createAssessment(assessmentData);
+                              
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                _fetchData(); // Refresh list
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text("Assessment Created Successfully!"), backgroundColor: Colors.green)
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red)
+                                );
+                              }
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF09AEF5),
@@ -531,7 +590,7 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
 
 
 
-  void _showCreateGroupBottomSheet(StateSetter setAssessmentSheetState) {
+  void _showCreateGroupBottomSheet(StateSetter setAssessmentSheetState, String courseId) {
     String? selectedSectionId;
     String? groupName;
     int groupSize = 5;
@@ -773,7 +832,7 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
                                           onPressed: () {
                                             Navigator.pop(ctx); // Close dialog
                                             Navigator.pop(context); // Close sheet
-                                            _finalizeGroupCreation(groupName!, sec, totalStudents, groupSize, groupingMethod, setAssessmentSheetState);
+                                            _finalizeGroupCreation(groupName!, sec, totalStudents, groupSize, groupingMethod, setAssessmentSheetState, courseId);
                                           },
                                           style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF09AEF5)),
                                           child: const Text("Continue", style: TextStyle(color: Colors.white)),
@@ -784,7 +843,7 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
                                 );
                               } else {
                                 Navigator.pop(context); // Close sheet
-                                _finalizeGroupCreation(groupName!, sec, totalStudents, groupSize, groupingMethod, setAssessmentSheetState);
+                                _finalizeGroupCreation(groupName!, sec, totalStudents, groupSize, groupingMethod, setAssessmentSheetState, courseId);
                               }
                           } : null,
                         style: ElevatedButton.styleFrom(
@@ -806,36 +865,54 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
     );
   }
 
-  void _finalizeGroupCreation(String title, Map<String, dynamic> section, int totalStudents, int size, String method, StateSetter setAssessmentSheetState) {
-    int groupCount = (totalStudents / size).ceil();
-    setState(() {
-      _existingGroups.insert(0, {
-        "id": "g${DateTime.now().millisecondsSinceEpoch}",
-        "title": title,
-        "course": section["course"].toString().split(" (")[0], // Keep purely course name
-        "section": section["name"],
-        "groupsCount": groupCount,
-        "date": "Today",
+  Future<void> _finalizeGroupCreation(String title, dynamic section, int totalStudents, int size, String method, StateSetter setAssessmentSheetState, String courseId) async {
+    try {
+      // Split section ID to get original section name/id if needed, 
+      // but generateGroups takes section name as string usually in this backend.
+      String sectionName = section['name'].toString().split(' - Section ')[1];
+      
+      await _apiService.generateGroups(
+        courseId, 
+        size, 
+        method: method, 
+        title: title,
+        section: sectionName
+      );
+      
+      // Re-fetch groups for the course to update the dropdown
+      final groups = await _apiService.getExistingGroups(courseId);
+      
+      setAssessmentSheetState(() {
+        _sectionsList = groups;
       });
-    });
-    
-    // Trigger rebuilt of the assessment sheet to show the new list of groups
-    setAssessmentSheetState(() {});
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Successfully formed $groupCount groups using '$method' method!"),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-      )
-    );
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Successfully formed groups using '$method' method!"),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          )
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error generating groups: $e"), backgroundColor: Colors.red)
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final filteredAssessments = _selectedFilter == 'All' 
+    var filteredAssessments = _selectedFilter == 'All' 
         ? _assessments 
-        : _assessments.where((a) => a['type'] == _selectedFilter).toList();
+        : _assessments.where((a) => (a['type'] ?? (a['title'].toString().toLowerCase().contains('project') ? 'Project' : 'Assignment')) == _selectedFilter).toList();
+
+    if (widget.initialCourseId != null) {
+      filteredAssessments = filteredAssessments.where((a) => a['course_id'].toString() == widget.initialCourseId).toList();
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
@@ -861,25 +938,35 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
               children: _filters.map((filter) {
                 final isSelected = _selectedFilter == filter;
                 return Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: ChoiceChip(
-                    label: Text(filter),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        _selectedFilter = filter;
-                      });
-                    },
-                    selectedColor: const Color(0xFF05398F),
-                    backgroundColor: Colors.white,
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black87,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(
-                        color: isSelected ? Colors.transparent : Colors.black12,
+                  padding: const EdgeInsets.only(right: 12),
+                  child: InkWell(
+                    onTap: () => setState(() => _selectedFilter = filter),
+                    borderRadius: BorderRadius.circular(12),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isSelected ? const Color(0xFF09AEF5) : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          )
+                        ],
+                        border: Border.all(
+                          color: isSelected ? Colors.transparent : Colors.black12,
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        filter,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.black54,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ),
@@ -889,30 +976,54 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
           ),
           
           Expanded(
-            child: filteredAssessments.isEmpty
-              ? const Center(child: Text("No assessments found", style: TextStyle(color: Colors.black54)))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: filteredAssessments.length,
-                  itemBuilder: (context, index) {
-                    final item = filteredAssessments[index];
-                    return _buildAssessmentCard(item);
-                  },
-                ),
+            child: _isLoading 
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(_error!, style: const TextStyle(color: Colors.red)),
+                        const SizedBox(height: 10),
+                        ElevatedButton(onPressed: _fetchData, child: const Text("Retry"))
+                      ],
+                    ),
+                  )
+                : filteredAssessments.isEmpty
+                  ? const Center(child: Text("No assessments found", style: TextStyle(color: Colors.black54)))
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: filteredAssessments.length,
+                      itemBuilder: (context, index) {
+                        final item = filteredAssessments[index];
+                        return _buildAssessmentCard(item);
+                      },
+                    ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showCreateAssessmentSheet,
-        backgroundColor: const Color(0xFF05398F),
+        backgroundColor: const Color(0xFF09AEF5),
         icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: const Text("Create", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
   }
 
-  Widget _buildAssessmentCard(Map<String, dynamic> item) {
-    Color typeColor = item['color'];
+  Widget _buildAssessmentCard(dynamic item) {
+    String title = item['title'] ?? 'Untitled';
+    String type = (title.toLowerCase().contains('project')) ? 'Project' : 
+                  (title.toLowerCase().contains('presentation')) ? 'Presentation' : 'Assignment';
+    
+    Color typeColor = type == 'Project' ? Colors.purple : (type == 'Presentation' ? Colors.orange : Colors.blue);
+    bool isGroup = item['is_group_assignment'] == true;
+    
+    String deadline = 'No due date';
+    if (item['due_date'] != null) {
+      DateTime dt = DateTime.parse(item['due_date']);
+      deadline = DateFormat('MMM d, h:mm a').format(dt);
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -943,7 +1054,7 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      item['type'],
+                      type,
                       style: TextStyle(color: typeColor, fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -955,7 +1066,7 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      item['format'] ?? 'Individual',
+                      isGroup ? 'Group' : 'Individual',
                       style: const TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -966,7 +1077,7 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
                   const Icon(Icons.access_time_rounded, size: 14, color: Colors.redAccent),
                   const SizedBox(width: 4),
                   Text(
-                    item['deadline'],
+                    deadline,
                     style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -975,10 +1086,10 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
           ),
           const SizedBox(height: 12),
           Text(
-            item['title'],
+            title,
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
-          if ((item['description'] as String).isNotEmpty) ...[
+          if (item['description'] != null && item['description'].toString().isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
               item['description'],
@@ -994,38 +1105,26 @@ class _InstructorAssessmentsScreenState extends State<InstructorAssessmentsScree
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  item['sections'] ?? "All Sections",
+                  item['course_title'] ?? "Course Info Unavailable",
                   style: const TextStyle(color: Colors.black54, fontSize: 13),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              if (item['hasFile'])
-                Row(
-                  children: [
-                    Icon(Icons.attach_file_rounded, size: 16, color: Colors.black45),
-                    const SizedBox(width: 4),
-                    const Text("1 Attachment", style: TextStyle(color: Colors.black45, fontSize: 13)),
-                  ],
-                )
-              else
-                const SizedBox(),
+              const SizedBox(),
               
               TextButton(
                 onPressed: () {},
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  backgroundColor: const Color(0xFFF4F7FC),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  backgroundColor: const Color(0xFF05398F).withOpacity(0.08),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text("View Details", style: TextStyle(color: Color(0xFF05398F), fontSize: 13, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  "View Details", 
+                  style: TextStyle(color: Color(0xFF05398F), fontSize: 13, fontWeight: FontWeight.bold)
+                ),
               )
             ],
           )

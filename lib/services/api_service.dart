@@ -1,12 +1,21 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
 
 class ApiService {
   
-  static const String baseUrl = "http://10.0.2.2:5000/api"; 
+  static String get baseUrl {
+    if (kIsWeb) return "http://localhost:5000/api";
+    try {
+      if (Platform.isAndroid) return "http://10.0.2.2:5000/api";
+    } catch (_) {}
+    return "http://localhost:5000/api";
+  }
 
   Future<Map<String, dynamic>> login(String email, String password) async {
+    print("Using baseUrl: $baseUrl");
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
@@ -48,6 +57,7 @@ class ApiService {
   }
 
   Future<List<dynamic>> getInstructorCourses() async {
+    print("Fetching Instructor Courses from: $baseUrl/courses/instructor");
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
@@ -130,6 +140,7 @@ class ApiService {
   }
 
   Future<List<dynamic>> getCourseEnrollmentStats(String courseId) async {
+    print("Fetching Enrollment Stats from: $baseUrl/courses/$courseId/enrollment-stats");
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
@@ -318,4 +329,89 @@ class ApiService {
       throw Exception("Error deleting groups: $e");
     }
   }
+
+  // === Assessment Methods ===
+
+  Future<List<dynamic>> getAssessments(String courseId) async {
+    print("Fetching Assessments from: $baseUrl/assignments/course/$courseId");
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/assignments/course/$courseId'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'] ?? [];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load assessments');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> createAssessment(Map<String, dynamic> assessmentData, {String? filePath}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/assignments'));
+      request.headers['Authorization'] = 'Bearer $token';
+      
+      assessmentData.forEach((key, value) {
+        request.fields[key] = value.toString();
+      });
+
+      if (filePath != null) {
+        request.files.add(await http.MultipartFile.fromPath('file', filePath));
+      }
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 201 && data['success'] == true) {
+        return data['data'];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to create assessment');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
+  Future<List<dynamic>> getExistingGroups(String courseId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/groups/$courseId'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'] ?? [];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load groups');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
 }
+

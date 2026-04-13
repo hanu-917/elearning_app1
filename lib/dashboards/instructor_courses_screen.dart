@@ -93,8 +93,7 @@ class _InstructorCoursesScreenState extends State<InstructorCoursesScreen> {
                 String title = course['title'] ?? 'Unknown Course';
                 String initials = title.split(' ').map((e) => e.isNotEmpty ? e[0].toUpperCase() : '').take(2).join();
                 return _buildCourseItem(
-                  title,
-                  course['course_code'] ?? '',
+                  course,
                   initials,
                   Colors.blue, // Dynamic color could be implemented here
                 );
@@ -204,7 +203,9 @@ class _InstructorCoursesScreenState extends State<InstructorCoursesScreen> {
     );
   }
 
-  Widget _buildCourseItem(String title, String code, String initials, Color avatarColor) {
+  Widget _buildCourseItem(dynamic course, String initials, Color avatarColor) {
+    String title = course['title'] ?? 'Unknown Course';
+    String code = course['course_code'] ?? '';
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -222,7 +223,12 @@ class _InstructorCoursesScreenState extends State<InstructorCoursesScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => InstructorAssessmentsScreen(initialCourseId: course['id'].toString())),
+            );
+          },
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
