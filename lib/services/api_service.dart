@@ -242,7 +242,7 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> generateGroups(String courseId, int studentsPerGroup, {String? departmentId}) async {
+  Future<Map<String, dynamic>> generateGroups(String courseId, int studentsPerGroup, {String? departmentId, String? section}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
@@ -250,6 +250,7 @@ class ApiService {
 
       final Map<String, dynamic> body = {"studentsPerGroup": studentsPerGroup};
       if (departmentId != null) body["departmentId"] = departmentId;
+      if (section != null) body["section"] = section;
 
       final response = await http.post(
         Uri.parse('$baseUrl/groups/$courseId/generate'),
