@@ -212,6 +212,83 @@ class _InstructorMaterialsScreenState extends State<InstructorMaterialsScreen> {
     );
   }
 
+  void _showRenameDialog(String id, String fullTitle) {
+    // Separate the base name from the extension
+    String baseName = fullTitle;
+    String extension = "";
+    if (fullTitle.contains('.') && fullTitle.lastIndexOf('.') > 0) {
+      int extIndex = fullTitle.lastIndexOf('.');
+      baseName = fullTitle.substring(0, extIndex);
+      extension = fullTitle.substring(extIndex);
+    }
+    
+    TextEditingController _controller = TextEditingController(text: baseName);
+    _controller.selection = TextSelection(baseOffset: 0, extentOffset: baseName.length);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Rename Material", style: TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: _controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: "Enter new name",
+            filled: true,
+            fillColor: const Color(0xFFF4F7FC),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.black54)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // Re-attach the extension when saving
+              String finalName = _controller.text.trim() + extension;
+              // TODO: Implement backend API for rename
+              Navigator.pop(context);
+              _fetchData();
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Renaming to $finalName is pending backend implementation")));
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF09AEF5), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+            child: const Text("Save", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRemoveDialog(String id) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text("Remove Material", style: TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold)),
+        content: const Text("Are you sure you want to permanently delete this material? This action cannot be undone."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.black54)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              // TODO: Implement backend API for delete
+              Navigator.pop(context);
+              _fetchData();
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Delete feature is pending backend implementation")));
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+            child: const Text("Delete", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Define helper UI builders ...
   
   IconData _getIconForFile(String ext) {
@@ -505,7 +582,35 @@ class _InstructorMaterialsScreenState extends State<InstructorMaterialsScreen> {
             else if (_selectedMaterials.isNotEmpty)
               const Icon(Icons.circle_outlined, color: Colors.black26)
             else
-              const Icon(Icons.more_vert_rounded, color: Colors.black38),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert_rounded, color: Colors.black38),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                onSelected: (value) {
+                  if (value == 'share') {
+                    _clearSelection();
+                    _toggleSelection(mId);
+                    _showShareBottomSheet();
+                  } else if (value == 'rename') {
+                    _showRenameDialog(mId, material["title"] ?? "Untitled");
+                  } else if (value == 'remove') {
+                    _showRemoveDialog(mId);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'share',
+                    child: Row(children: [Icon(Icons.share_rounded, size: 20, color: Colors.blue), SizedBox(width: 10), Text("Share")])
+                  ),
+                  const PopupMenuItem(
+                    value: 'rename',
+                    child: Row(children: [Icon(Icons.edit_rounded, size: 20, color: Colors.orange), SizedBox(width: 10), Text("Rename")])
+                  ),
+                  const PopupMenuItem(
+                    value: 'remove',
+                    child: Row(children: [Icon(Icons.delete_rounded, size: 20, color: Colors.red), SizedBox(width: 10), Text("Remove", style: TextStyle(color: Colors.red))])
+                  ),
+                ],
+              ),
           ],
         ),
       ),
