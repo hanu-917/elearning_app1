@@ -129,6 +129,28 @@ class ApiService {
     }
   }
 
+  Future<List<dynamic>> getCourseEnrollmentStats(String courseId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/courses/$courseId/enrollment-stats'),
+        headers: {"Authorization": "Bearer $token"},
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to fetch enrollment stats');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
   Future<dynamic> getInstructorTargets() async {
     try {
       final prefs = await SharedPreferences.getInstance();

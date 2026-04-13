@@ -93,6 +93,8 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
     String? groupName;
     int groupSize = 5;
     String groupingMethod = 'Random';
+    List<dynamic> currentCourseStats = [];
+    bool isFetchingStats = false;
     
     final List<String> methods = ['Random', 'Alphabetic', 'GPA Top Distributed'];
     final TextEditingController nameController = TextEditingController();
@@ -112,6 +114,18 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
             final List<String> availableSections = currentDept != null 
               ? List<String>.from(currentDept["sections"] ?? []) 
               : [];
+
+            // Calculate the exact count for selected dept and section
+            int currentSegmentCount = 0;
+            if (selectedDepartmentId != null && selectedSection != null) {
+              final stat = currentCourseStats.firstWhere(
+                (s) => s["department_id"] == selectedDepartmentId && s["section"] == selectedSection,
+                orElse: () => null
+              );
+              if (stat != null) {
+                currentSegmentCount = stat["student_count"] ?? 0;
+              }
+            }
 
             return Container(
               padding: EdgeInsets.only(
@@ -179,16 +193,36 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
                               child: Text("${course['title']}"),
                             );
                           }).toList(),
-                          onChanged: (val) {
-                            setSheetState(() {
-                              selectedCourseId = val;
-                              selectedDepartmentId = null; // Reset dependent fields
-                              selectedSection = null;
-                            });
+                          onChanged: (val) async {
+                            if (val != null) {
+                              setSheetState(() {
+                                isFetchingStats = true;
+                                selectedCourseId = val;
+                                selectedDepartmentId = null;
+                                selectedSection = null;
+                                currentCourseStats = [];
+                              });
+                              
+                              try {
+                                final stats = await _apiService.getCourseEnrollmentStats(val);
+                                setSheetState(() {
+                                  currentCourseStats = stats;
+                                  isFetchingStats = false;
+                                });
+                              } catch (e) {
+                                setSheetState(() => isFetchingStats = false);
+                              }
+                            }
                           },
                         ),
                       ),
                     ),
+
+                    if (isFetchingStats) ...[
+                      const SizedBox(height: 10),
+                      const Center(child: LinearProgressIndicator(minHeight: 2)),
+                    ],
+
                     if (selectedCourseId != null) ...[
                       const SizedBox(height: 20),
                       const Text("Select Department", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
@@ -250,29 +284,32 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE3F2FD),
-                          borderRadius: BorderRadius.circular(12),
+                      
+                      if (selectedSection != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE3F2FD),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.people_alt_rounded, color: Color(0xFF09AEF5), size: 20),
+                              const SizedBox(width: 10),
+                              const Text(
+                                "Students in Section:", 
+                                style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600)
+                              ),
+                              const Spacer(),
+                              Text(
+                                "$currentSegmentCount",
+                                style: const TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                            ],
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.people_alt_rounded, color: Color(0xFF09AEF5), size: 20),
-                            const SizedBox(width: 10),
-                            const Text(
-                              "Total Enrolled Students:", 
-                              style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600)
-                            ),
-                            const Spacer(),
-                            Text(
-                              "${_courses.firstWhere((c) => c["id"] == selectedCourseId)["student_count"] ?? 0}",
-                              style: const TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                          ],
-                        ),
-                      ),
+                      ],
                     ],
                     const SizedBox(height: 20),
 
@@ -371,8 +408,7 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
                       child: ElevatedButton(
                         onPressed: (selectedCourseId != null && selectedDepartmentId != null && selectedSection != null && groupName != null && groupName!.isNotEmpty && groupSize > 0) 
                           ? () {
-                              final course = _courses.firstWhere((c) => c["id"] == selectedCourseId);
-                              int totalStudents = course["student_count"] ?? 0;
+                              int totalStudents = currentSegmentCount;
                               int remainder = totalStudents % groupSize;
 
                               if (remainder != 0) {
@@ -387,7 +423,7 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
                                         onPressed: () {
                                           Navigator.pop(ctx);
                                           Navigator.pop(context);
-                                          _finalizeGroupCreation(groupName!, course, groupSize, groupingMethod, departmentId: selectedDepartmentId, section: selectedSection);
+                                          _finalizeGroupCreation(groupName!, selectedCourseId!, groupSize, groupingMethod, departmentId: selectedDepartmentId, section: selectedSection);
                                         },
                                         child: const Text("Continue"),
                                       ),
@@ -396,7 +432,7 @@ class _InstructorGroupsScreenState extends State<InstructorGroupsScreen> {
                                 );
                               } else {
                                 Navigator.pop(context); // Close sheet
-                                _finalizeGroupCreation(groupName!, course, groupSize, groupingMethod, departmentId: selectedDepartmentId, section: selectedSection);
+                                _finalizeGroupCreation(groupName!, selectedCourseId!, groupSize, groupingMethod, departmentId: selectedDepartmentId, section: selectedSection);
                               }
                           } : null,
                         style: ElevatedButton.styleFrom(
