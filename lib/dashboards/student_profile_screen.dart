@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'student_settings_screen.dart';
 
 class StudentProfileScreen extends StatelessWidget {
   const StudentProfileScreen({super.key});
@@ -26,7 +27,7 @@ class StudentProfileScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  // Top bar mimicking the back button & settings but using our notification icon
+                  // Top bar with Settings Icon Button
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Row(
@@ -34,7 +35,17 @@ class StudentProfileScreen extends StatelessWidget {
                       children: [
                         const Icon(Icons.arrow_back, color: Colors.transparent), // Layout spacing
                         const Text("Profile", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                        const Icon(Icons.notifications_none, color: Colors.white), 
+                        IconButton(
+                          icon: const Icon(Icons.settings_outlined, color: Colors.white),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const StudentSettingsScreen()),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -197,7 +208,7 @@ class StudentProfileScreen extends StatelessWidget {
   }
 
   // Method mimics the clean minimalist list row structure from the image
-  Widget _buildListRow(IconData icon, String title, String subtitle) {
+  Widget _buildListRow(IconData icon, String title, String subtitle, {VoidCallback? onTap}) {
     return Column(
       children: [
         ListTile(
@@ -225,7 +236,7 @@ class StudentProfileScreen extends StatelessWidget {
               )
             : null,
           trailing: subtitle.isEmpty ? const Icon(Icons.chevron_right, color: Colors.black26, size: 20) : null,
-          onTap: () {},
+          onTap: onTap ?? () {},
         ),
         const Divider(height: 1, indent: 64, color: Colors.black12),
       ],
