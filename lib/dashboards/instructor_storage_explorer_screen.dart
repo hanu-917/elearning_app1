@@ -334,45 +334,20 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
       for (var item in clipboardCopy) {
         String baseName = item['name'];
         String newName = baseName;
-        bool shouldBypassLocalCheck = false;
 
-        // Check for conflicts
+        // Auto-resolve conflicts by incrementing name until unique
         while (_folders.any((f) => f['name'] == newName) || _files.any((f) => f['name'] == newName)) {
-          final bool? resolve = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text("Name Conflict"),
-              content: Text("An item named '$newName' already exists here. Would you like to rename the incoming item and place it?"),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Skip")),
-                TextButton(
-                  onPressed: () {
-                    newName = _incrementName(newName, item['type']);
-                    Navigator.pop(context, true);
-                  }, 
-                  child: const Text("Rename & Place")
-                ),
-              ],
-            )
-          );
-
-          if (resolve != true) {
-            newName = ''; // Skip marker
-            break;
-          }
-          // The loop will automatically check if the newly incremented name also exists
+          newName = _incrementName(newName, item['type']);
         }
 
-        if (newName.isNotEmpty) {
-          if (item['mode'] == 'copy') {
-            await _apiService.duplicateEntry(item['id'], item['type'], _currentFolderId, newName: newName);
-          } else {
-            // Cut mode: Rename if name was changed, then move
-            if (newName != baseName) {
-              await _apiService.renameEntry(item['id'], item['type'], newName);
-            }
-            await _apiService.moveEntry(item['id'], item['type'], _currentFolderId);
+        if (item['mode'] == 'copy') {
+          await _apiService.duplicateEntry(item['id'], item['type'], _currentFolderId, newName: newName);
+        } else {
+          // Cut mode: Rename if name was changed, then move
+          if (newName != baseName) {
+            await _apiService.renameEntry(item['id'], item['type'], newName);
           }
+          await _apiService.moveEntry(item['id'], item['type'], _currentFolderId);
         }
       }
 
