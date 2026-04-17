@@ -5,47 +5,62 @@ class StudentCoursesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FC), // Match home screen background
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: false,
-        title: const Text(
-          "My Learning",
-          style: TextStyle(
-            color: Color(0xFF05398F),
-            fontSize: 26,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
-          ),
-        ),
-        actions: [
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top Gradient Section matches the dashboard image
           Container(
-            margin: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 40),
             decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF6A85E6), // Darker blue
+                  Color(0xFF8FB0FF), // Lighter blue
+                  Color(0xFFE5ECFF), // Almost white
+                ],
+                stops: [0.0, 0.6, 1.0],
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(40),
+                bottomRight: Radius.circular(40),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF05398F).withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
+                  color: const Color(0xFF6A85E6).withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                )
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "My Learning",
+                  style: TextStyle(
+                    fontSize: 28,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.search_rounded, color: Color(0xFF6A85E6)),
                 ),
               ],
             ),
-            child: IconButton(
-              icon: const Icon(Icons.search_rounded, color: Color(0xFF05398F)),
-              onPressed: () {},
-            ),
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          
+          const SizedBox(height: 10),
             const SizedBox(height: 10),
             // Header Overview Card
             Padding(
@@ -136,8 +151,7 @@ class StudentCoursesScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 40),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -146,17 +160,13 @@ class StudentCoursesScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF05398F), Color(0xFF09AEF5)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF09AEF5).withOpacity(0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -169,19 +179,19 @@ class StudentCoursesScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: const Color(0xFF3B5BFF).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
                     "Spring 2026",
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),
+                    style: TextStyle(color: Color(0xFF3B5BFF), fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ),
                 const SizedBox(height: 16),
                 const Text(
                   "Great work!",
                   style: TextStyle(
-                    color: Colors.white,
+                    color: Color(0xFF1E2843),
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     letterSpacing: -0.5,
@@ -191,7 +201,7 @@ class StudentCoursesScreen extends StatelessWidget {
                 Text(
                   "You have completed 60% of your weekly goals.",
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.85),
+                    color: const Color(0xFF4A5568),
                     fontSize: 14,
                     height: 1.4,
                   ),
@@ -210,15 +220,15 @@ class StudentCoursesScreen extends StatelessWidget {
                 child: CircularProgressIndicator(
                   value: 0.6,
                   strokeWidth: 8,
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: const Color(0xFFE5ECFF),
                   strokeCap: StrokeCap.round,
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3B5BFF)),
                 ),
               ),
               const Text(
                 "60%",
                 style: TextStyle(
-                  color: Colors.white,
+                  color: Color(0xFF1E2843),
                   fontWeight: FontWeight.w800,
                   fontSize: 18,
                 ),
@@ -240,7 +250,7 @@ class StudentCoursesScreen extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
+            blurRadius: 15,
             offset: const Offset(0, 5),
           ),
         ],
@@ -310,9 +320,9 @@ class StudentCoursesScreen extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
       ),

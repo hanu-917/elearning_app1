@@ -52,45 +52,97 @@ class _StudentInboxScreenState extends State<StudentInboxScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FC), 
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF4F7FC),
-        elevation: 0,
-        centerTitle: false,
-        title: const Text("Inbox", style: TextStyle(color: Color(0xFF05398F), fontSize: 24, fontWeight: FontWeight.bold)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF05398F)), 
-            onPressed: _fetchData
-          ),
-          IconButton(
-            icon: const Icon(Icons.search_rounded, color: Color(0xFF05398F)), 
-            onPressed: () {}
-          ),
-        ],
-      ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : _error != null
-          ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
-          : Column(
-              children: [
-                const SizedBox(height: 10),
-                _buildToggleSwitch(),
-                const SizedBox(height: 20),
-                Expanded(
-                  child: isAnnounceSelected ? _buildAnnouncementsList() : _buildChatList(),
-                ),
+    return Column(
+      children: [
+        // Top Gradient Section
+        Container(
+          padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 40),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF6A85E6),
+                Color(0xFF8FB0FF),
+                Color(0xFFE5ECFF),
               ],
+              stops: [0.0, 0.6, 1.0],
             ),
-      // 3. Floating Action Button for New Message
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: const Color(0xFF09AEF5),
-        elevation: 4,
-        child: const Icon(Icons.edit_rounded, color: Colors.white, size: 28),
-      ),
+            borderRadius: const BorderRadius.only(
+              bottomLeft: Radius.circular(40),
+              bottomRight: Radius.circular(40),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF6A85E6).withOpacity(0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              )
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Inbox",
+                style: TextStyle(
+                  fontSize: 28,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              Row(
+                children: [
+                  IconButton(icon: const Icon(Icons.refresh_rounded, color: Colors.white), onPressed: _fetchData),
+                  Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.search_rounded, color: Color(0xFF6A85E6)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        
+        Expanded(
+          child: Stack(
+            children: [
+              _isLoading 
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                  ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
+                  : Column(
+                      children: [
+                        const SizedBox(height: 20),
+                        _buildToggleSwitch(),
+                        const SizedBox(height: 20),
+                        Expanded(
+                          child: isAnnounceSelected ? _buildAnnouncementsList() : _buildChatList(),
+                        ),
+                      ],
+                    ),
+              
+              // Floating Action Button Overlay
+              Positioned(
+                bottom: 24,
+                right: 24,
+                child: FloatingActionButton(
+                  onPressed: () {},
+                  backgroundColor: const Color(0xFF3B5BFF),
+                  elevation: 4,
+                  child: const Icon(Icons.edit_rounded, color: Colors.white, size: 28),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

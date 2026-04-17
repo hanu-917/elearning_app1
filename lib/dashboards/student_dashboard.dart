@@ -363,17 +363,13 @@ class _StudentDashboardState extends State<StudentDashboard> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1E2843), Color(0xFF2A3A60)], // Sleek dark blue
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1E2843).withOpacity(0.2),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 15,
-            offset: const Offset(0, 8),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
@@ -386,25 +382,25 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: const Color(0xFFE5ECFF),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
                     "RECENTLY OPENED", 
-                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0)
+                    style: TextStyle(color: Color(0xFF6A85E6), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0)
                   ),
                 ),
                 const SizedBox(height: 12),
                 const Text(
                   "Data Structures",
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Color(0xFF1E2843), fontSize: 18, fontWeight: FontWeight.bold),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 6),
                 const Text(
                   "Chapter 4: Binary Trees",
-                  style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                  style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -421,14 +417,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
                 child: CircularProgressIndicator(
                   value: 0.65,
                   strokeWidth: 6,
-                  backgroundColor: Colors.white.withOpacity(0.1),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF09AEF5)), // Cyan accent
+                  backgroundColor: const Color(0xFFF1F5F9), // Very light grey track
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3B5BFF)), // Primary blue matching the UI links
                   strokeCap: StrokeCap.round,
                 ),
               ),
               const Text(
                 "65%",
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(color: Color(0xFF1E2843), fontSize: 16, fontWeight: FontWeight.bold),
               )
             ],
           )

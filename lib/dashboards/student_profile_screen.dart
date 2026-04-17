@@ -6,31 +6,39 @@ class StudentProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white, // Pure white background to match reference
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Massive Blue Header Block matching reference image
-            Container(
-              padding: const EdgeInsets.only(top: 60, bottom: 40),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF3B5BFF), Color(0xFF1E3A8A)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(40),
-                  bottomRight: Radius.circular(40),
-                ),
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Top Gradient Section matches the dashboard image
+          Container(
+            padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 40),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF6A85E6),
+                  Color(0xFF8FB0FF),
+                  Color(0xFFE5ECFF),
+                ],
+                stops: [0.0, 0.6, 1.0],
               ),
-              child: Column(
-                children: [
-                  // Top bar with Settings Icon Button
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Row(
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(40),
+                bottomRight: Radius.circular(40),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF6A85E6).withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                )
+              ],
+            ),
+            child: Column(
+              children: [
+                // Top bar with Settings Icon Button
+                Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Icon(Icons.arrow_back, color: Colors.transparent), // Layout spacing
@@ -48,7 +56,6 @@ class StudentProfileScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                  ),
                   const SizedBox(height: 32),
                   // Prominent Circular Avatar
                   Container(
@@ -69,18 +76,18 @@ class StudentProfileScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Color(0xFF1E2843),
                     ),
                   ),
                   const SizedBox(height: 8),
                   const Text(
                     "CS Department • Year 2",
-                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                    style: TextStyle(fontSize: 14, color: Color(0xFF4A5568)),
                   ),
                   const SizedBox(height: 4),
                   const Text(
                     "ID: 2024001A",
-                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                    style: TextStyle(fontSize: 14, color: Color(0xFF4A5568)),
                   ),
                   const SizedBox(height: 48),
                   // Embedded Stats (GPA and Attendance) mimicking Followers/Following layout
@@ -89,21 +96,21 @@ class StudentProfileScreen extends StatelessWidget {
                     children: [
                       Column(
                         children: const [
-                          Text("3.6", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                          Text("3.6", style: TextStyle(color: Color(0xFF1E2843), fontSize: 20, fontWeight: FontWeight.bold)),
                           SizedBox(height: 4),
-                          Text("GPA", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          Text("GPA", style: TextStyle(color: Color(0xFF4A5568), fontSize: 12)),
                         ],
                       ),
                       Container(
                         height: 30,
                         width: 1,
-                        color: Colors.white30,
+                        color: Colors.black12,
                       ),
                       Column(
                         children: const [
-                          Text("87%", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                          Text("87%", style: TextStyle(color: Color(0xFF1E2843), fontSize: 20, fontWeight: FontWeight.bold)),
                           SizedBox(height: 4),
-                          Text("Attendance", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                          Text("Attendance", style: TextStyle(color: Color(0xFF4A5568), fontSize: 12)),
                         ],
                       ),
                     ],
@@ -123,8 +130,16 @@ class StudentProfileScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     margin: const EdgeInsets.only(bottom: 24),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.red.shade100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        )
+                      ],
                     ),
                     child: Row(
                       children: const [
@@ -133,7 +148,7 @@ class StudentProfileScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             "Low attendance alert. Review your schedule.",
-                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.red),
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.red),
                           ),
                         ),
                       ],
@@ -203,7 +218,6 @@ class StudentProfileScreen extends StatelessWidget {
             const SizedBox(height: 32),
           ],
         ),
-      ),
     );
   }
 

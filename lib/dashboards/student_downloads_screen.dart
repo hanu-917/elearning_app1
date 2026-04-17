@@ -27,40 +27,81 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FC),
-      body: CustomScrollView(
-        controller: _scrollController,
-        physics: const _LessStretchyScrollPhysics(parent: AlwaysScrollableScrollPhysics()), 
-        slivers: [
+    return CustomScrollView(
+      controller: _scrollController,
+      physics: const _LessStretchyScrollPhysics(parent: AlwaysScrollableScrollPhysics()), 
+      slivers: [
           // The SliverAppBar that contains the Storage widget and expands when dragged down
           SliverAppBar(
-            backgroundColor: const Color(0xFFF4F7FC),
+            backgroundColor: const Color(0xFF6A85E6), // Fallback solid
             elevation: 0,
             pinned: true,
             floating: false,
             stretch: false, 
-            expandedHeight: 250.0,
-            collapsedHeight: 60.0,
-            title: const Text(
-              "Downloads",
-              style: TextStyle(color: Color(0xFF05398F), fontSize: 24, fontWeight: FontWeight.bold)
+            expandedHeight: 280.0,
+            collapsedHeight: 80.0,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(40),
+                bottomRight: Radius.circular(40),
+              ),
+            ),
+            title: const Padding(
+              padding: EdgeInsets.only(left: 8.0),
+              child: Text(
+                "Downloads",
+                style: TextStyle(
+                  fontSize: 28,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
+                ),
+              ),
             ),
             actions: [
-              IconButton(
-                icon: const Icon(Icons.search_rounded, color: Color(0xFF05398F)),
-                onPressed: () {},
+              Container(
+                margin: const EdgeInsets.only(right: 24),
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.search_rounded, color: Color(0xFF6A85E6), size: 20),
               ),
             ],
-            // Regular flexible space for storage widget, appears on scroll to top
             flexibleSpace: FlexibleSpaceBar(
-              background: SafeArea(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    _buildStorageStatus(),
-                    const SizedBox(height: 10),
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFF6A85E6),
+                      Color(0xFF8FB0FF),
+                      Color(0xFFE5ECFF),
+                    ],
+                    stops: [0.0, 0.6, 1.0],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(40),
+                    bottomRight: Radius.circular(40),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF6A85E6).withOpacity(0.2),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    )
                   ],
+                ),
+                child: SafeArea(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      _buildStorageStatus(),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -139,7 +180,6 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
             ),
           ),
         ],
-      ),
     );
   }
 
@@ -148,17 +188,13 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF09AEF5), Color(0xFF05398F)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF05398F).withOpacity(0.3),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 15,
-            offset: const Offset(0, 8),
+            offset: const Offset(0, 5),
           )
         ],
       ),
@@ -169,22 +205,22 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: const [
-               Text("Local Storage Used", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
-               Icon(Icons.sd_storage_rounded, color: Colors.white70, size: 20)
+               Text("Local Storage Used", style: TextStyle(color: Color(0xFF4A5568), fontSize: 13, fontWeight: FontWeight.w600)),
+               Icon(Icons.sd_storage_rounded, color: Color(0xFF4A5568), size: 20)
             ],
           ),
           const SizedBox(height: 5),
-          const Text("182 MB", style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
+          const Text("182 MB", style: TextStyle(color: Color(0xFF1E2843), fontSize: 26, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           LinearProgressIndicator(
             value: 0.25, 
-            backgroundColor: Colors.white.withOpacity(0.3),
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+            backgroundColor: const Color(0xFFE5ECFF),
+            valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF3B5BFF)),
             borderRadius: BorderRadius.circular(5),
             minHeight: 6,
           ),
           const SizedBox(height: 8),
-          const Text("Saved for Offline Viewing", style: TextStyle(color: Colors.white60, fontSize: 11)),
+          const Text("Saved for Offline Viewing", style: TextStyle(color: Color(0xFF4A5568), fontSize: 11)),
         ],
       ),
     );
@@ -216,9 +252,9 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           )
         ]
       ),
