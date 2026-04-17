@@ -158,13 +158,13 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        _buildQuickActionCard(Icons.calendar_month_outlined, "Schedule\nMeeting"),
+                        _buildQuickActionCard(Icons.assignment_ind_outlined, "Pending\nAssessments"),
                         const SizedBox(width: 16),
-                        _buildQuickActionCard(Icons.menu_book_outlined, "Library\nCatalog"),
+                        _buildQuickActionCard(Icons.campaign_outlined, "Announcements"),
                         const SizedBox(width: 16),
-                        _buildQuickActionCard(Icons.payment_outlined, "Pay\nTuition"),
+                        _buildQuickActionCard(Icons.forum_outlined, "Discussion\nForums"),
                         const SizedBox(width: 16),
-                        _buildQuickActionCard(Icons.receipt_long_outlined, "Request\nTranscript"),
+                        _buildQuickActionCard(Icons.folder_shared_outlined, "Course\nResources"),
                       ],
                     ),
                   ),
