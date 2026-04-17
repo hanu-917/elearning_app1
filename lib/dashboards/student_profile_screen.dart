@@ -1,232 +1,263 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart'; 
-import '../auth/welcome_screen.dart';
 
-class StudentProfileScreen extends StatefulWidget {
+class StudentProfileScreen extends StatelessWidget {
   const StudentProfileScreen({super.key});
-
-  @override
-  State<StudentProfileScreen> createState() => _StudentProfileScreenState();
-}
-
-class _StudentProfileScreenState extends State<StudentProfileScreen> {
-  String _title = '';
-  String _firstName = '';
-  String _middleName = '';
-  String _lastName = '';
-  String _email = '';
-  String _institutionalId = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
-
-  Future<void> _loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _title = prefs.getString('title') ?? '';
-      if (_title == 'None') _title = '';
-      _firstName = prefs.getString('first_name') ?? 'Student';
-      _middleName = prefs.getString('middle_name') ?? '';
-      _lastName = prefs.getString('last_name') ?? '';
-      _email = prefs.getString('email') ?? 'student@bdu.edu.et';
-      _institutionalId = prefs.getString('institutional_id') ?? 'N/A';
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FC),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF4F7FC),
-        elevation: 0,
-        centerTitle: false,
-        title: const Text(
-          "Profile",
-          style: TextStyle(color: Color(0xFF05398F), fontSize: 24, fontWeight: FontWeight.bold)
-        ),
-      ),
+      backgroundColor: Colors.white, // Pure white background to match reference
       body: SingleChildScrollView(
         child: Column(
           children: [
-            const SizedBox(height: 20),
-
-            // 1. Profile Header Hero
-            Center(
-              child: Stack(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF09AEF5).withOpacity(0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        )
-                      ]
-                    ),
-                    child: const CircleAvatar(
-                      radius: 65,
-                      backgroundColor: Colors.white,
-                      child: CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Color(0xFFE3F2FD), // Profile placeholder
-                        child: Icon(Icons.person_outline_rounded, size: 70, color: Color(0xFF09AEF5)),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 4,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF09AEF5), Color(0xFF05398F)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          )
-                        ]
-                      ),
-                      child: const Icon(Icons.edit_rounded, color: Colors.white, size: 18),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-            
-            Text("${_title.isNotEmpty ? '$_title ' : ''}$_firstName $_middleName $_lastName".replaceAll(RegExp(r'\s+'), ' ').trim(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.black87)),
-            const SizedBox(height: 4),
+            // Massive Blue Header Block matching reference image
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF09AEF5).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
+              padding: const EdgeInsets.only(top: 60, bottom: 40),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF3B5BFF), Color(0xFF1E3A8A)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(40),
+                  bottomRight: Radius.circular(40),
+                ),
               ),
-              child: Text(
-                _email,
-                style: const TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold, fontSize: 13)
-              ),
-            ),
-            const SizedBox(height: 4),
-            if (_institutionalId.isNotEmpty && _institutionalId != 'N/A')
-              Text(
-                "ID: $_institutionalId",
-                style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w500, fontSize: 13)
-              ),
-
-            const SizedBox(height: 40),
-
-            // 2. Settings Options List
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _buildProfileOption(Icons.library_books_rounded, "My Courses", Colors.blue),
-                  _buildProfileOption(Icons.school_rounded, "Grades & Assessment", Colors.green),
-                  _buildProfileOption(Icons.local_library_rounded, "Library Resources", Colors.orange),
-                  _buildProfileOption(Icons.settings_rounded, "Account Settings", Colors.grey.shade700),
-                  _buildProfileOption(Icons.help_outline_rounded, "Help & Support", Colors.purple),
+                  // Top bar mimicking the back button & settings but using our notification icon
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Icon(Icons.arrow_back, color: Colors.transparent), // Layout spacing
+                        const Text("Profile", style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Icon(Icons.notifications_none, color: Colors.white), 
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  // Prominent Circular Avatar
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const CircleAvatar(
+                      radius: 46,
+                      backgroundColor: Color(0xFFE2E8F0),
+                      child: Icon(Icons.person, size: 50, color: Color(0xFF94A3B8)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Hani",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "CS Department • Year 2",
+                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    "ID: 2024001A",
+                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 48),
+                  // Embedded Stats (GPA and Attendance) mimicking Followers/Following layout
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Column(
+                        children: const [
+                          Text("3.6", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                          SizedBox(height: 4),
+                          Text("GPA", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                        ],
+                      ),
+                      Container(
+                        height: 30,
+                        width: 1,
+                        color: Colors.white30,
+                      ),
+                      Column(
+                        children: const [
+                          Text("87%", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                          SizedBox(height: 4),
+                          Text("Attendance", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                        ],
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
-
-            const SizedBox(height: 40),
-
-            // 3. Logout Button (Updated Logic)
+            
+            // Minimal White Body (No Cards)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  // PERSISTENCE: Clear all locally stored data
-                  final SharedPreferences prefs = await SharedPreferences.getInstance();
-                  await prefs.clear();
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Attendance Alert
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.error_outline, color: Colors.red, size: 20),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            "Low attendance alert. Review your schedule.",
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
-                  // Ensure the context is still valid before navigating
-                  if (context.mounted) {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const WelcomeScreen()),
-                      (route) => false,
-                    );
-                  }
-                },
-                icon: const Icon(Icons.logout_rounded, color: Colors.white),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD32F2F), // Strong professional red
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size(double.infinity, 55),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                  elevation: 5,
-                  shadowColor: const Color(0xFFD32F2F).withOpacity(0.4),
-                ),
-                label: const Text("Log Out", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                  // Performance Insight
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
+                    child: Text("Performance Insight", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black45)),
+                  ),
+                  _buildListRow(Icons.check_circle_outline, "Strong subject", "Software Engineering"),
+                  _buildListRow(Icons.error_outline, "Weak subject", "Mathematics"),
+                  _buildListRow(Icons.trending_flat, "Overall trend", "Stable"),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Settings
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
+                    child: Text("Settings", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black45)),
+                  ),
+                  _buildListRow(Icons.library_books_outlined, "Academic Record", ""),
+                  _buildListRow(Icons.offline_bolt_outlined, "Offline Content", ""),
+                  _buildToggleRow(Icons.nights_stay_outlined, "Study Mode (Dark Theme)", false), // Toggled!
+
+                  const SizedBox(height: 24),
+                  
+                  // Support
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
+                    child: Text("Support", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black45)),
+                  ),
+                  _buildListRow(Icons.mail_outline, "Contact Department", "admin@csdept.edu"),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // Dedicated Log Out Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: BorderSide(color: Colors.red.shade200, width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () {},
+                      child: const Text(
+                        "Log Out",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.redAccent,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildProfileOption(IconData icon, String title, Color color) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {},
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.1), 
-                    borderRadius: BorderRadius.circular(12)
-                  ),
-                  child: Icon(icon, color: color, size: 24),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Colors.black87)),
-                ),
-                const Icon(Icons.chevron_right_rounded, color: Colors.black38),
-              ],
+  // Method mimics the clean minimalist list row structure from the image
+  Widget _buildListRow(IconData icon, String title, String subtitle) {
+    return Column(
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.black54, size: 20),
+          ),
+          title: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
             ),
           ),
+          subtitle: subtitle.isNotEmpty 
+            ? Text(
+                subtitle,
+                style: const TextStyle(fontSize: 13, color: Colors.black54),
+              )
+            : null,
+          trailing: subtitle.isEmpty ? const Icon(Icons.chevron_right, color: Colors.black26, size: 20) : null,
+          onTap: () {},
         ),
-      ),
+        const Divider(height: 1, indent: 64, color: Colors.black12),
+      ],
+    );
+  }
+
+  // New Toggle Method specifically constructed for tracking study mode
+  Widget _buildToggleRow(IconData icon, String title, bool value) {
+    return Column(
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: Colors.black54, size: 20),
+          ),
+          title: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.black87,
+            ),
+          ),
+          trailing: Switch(
+            value: value,
+            onChanged: (val) {},
+            activeColor: const Color(0xFF3B5BFF),
+          ),
+        ),
+        const Divider(height: 1, indent: 64, color: Colors.black12),
+      ],
     );
   }
 }
