@@ -143,12 +143,79 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 32),
+                  
+                  const Text(
+                    "Quick Actions",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E2843),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildQuickActionCard(Icons.calendar_month_outlined, "Schedule\nMeeting"),
+                        const SizedBox(width: 16),
+                        _buildQuickActionCard(Icons.menu_book_outlined, "Library\nCatalog"),
+                        const SizedBox(width: 16),
+                        _buildQuickActionCard(Icons.payment_outlined, "Pay\nTuition"),
+                        const SizedBox(width: 16),
+                        _buildQuickActionCard(Icons.receipt_long_outlined, "Request\nTranscript"),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 32), // bottom padding for nav bar scrolling
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActionCard(IconData icon, String label) {
+    return Container(
+      width: 110, // slightly wider to fit multiline labels comfortably
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE5ECFF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: const Color(0xFF6A85E6), size: 24),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1E2843),
+              height: 1.2,
+            ),
+          ),
+        ],
       ),
     );
   }

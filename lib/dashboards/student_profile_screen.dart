@@ -159,7 +159,6 @@ class StudentProfileScreen extends StatelessWidget {
                     child: Text("Support", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black45)),
                   ),
                   _buildListRow(Icons.help_outline, "Help Center & FAQs", ""),
-                  _buildListRow(Icons.live_help_outlined, "Live Chat Support", "24/7 Virtual Assistant"),
                   _buildListRow(Icons.mail_outline, "Contact Department", "admin@csdept.edu"),
                   _buildListRow(Icons.report_problem_outlined, "Report an Issue", ""),
                   

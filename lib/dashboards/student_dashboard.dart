@@ -42,7 +42,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
       },
       child: Scaffold(
         body: _screens[_index],
-      bottomNavigationBar: Container(
+        bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
