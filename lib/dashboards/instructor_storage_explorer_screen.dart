@@ -795,7 +795,7 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
   Widget _buildTile(dynamic item, String type, bool isSelected) {
     String name = item['name'];
     String date = _formatDate(item['created_at']);
-    String info = type == 'folder' ? "Items" : _formatBytes(item['file_size_bytes'] ?? 0);
+    String info = type == 'folder' ? "${item['item_count'] ?? 0} Items" : _formatBytes(item['file_size_bytes'] ?? 0);
     
     final bool isUploads = type == 'folder' && name.toLowerCase() == 'uploads' && _currentFolderId == null;
     
