@@ -12,28 +12,17 @@ class StudentProfileScreen extends StatelessWidget {
           // Top Gradient Section matches the dashboard image
           Container(
             padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 40),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
                   Color(0xFF6A85E6),
                   Color(0xFF8FB0FF),
-                  Color(0xFFE5ECFF),
+                  Color(0xFFF5F7FA), // Matches Scaffold background exactly
                 ],
                 stops: [0.0, 0.6, 1.0],
               ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(40),
-                bottomRight: Radius.circular(40),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF6A85E6).withOpacity(0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                )
-              ],
             ),
             child: Column(
               children: [

@@ -121,30 +121,19 @@ class _StudentDashboardState extends State<StudentDashboard> {
       child: Column(
         children: [
           // Top Gradient Section matches the image
-          Container(
+            Container(
             padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 40),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
                   Color(0xFF6A85E6), // Darker blue
                   Color(0xFF8FB0FF), // Lighter blue
-                  Color(0xFFE5ECFF), // Almost white
+                  Color(0xFFF5F7FA), // Matches Scaffold background
                 ],
                 stops: [0.0, 0.6, 1.0],
               ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(40),
-                bottomRight: Radius.circular(40),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF6A85E6).withOpacity(0.2),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                )
-              ],
             ),
             child: Column(
               children: [

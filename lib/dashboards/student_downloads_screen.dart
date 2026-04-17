@@ -33,19 +33,13 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
       slivers: [
           // The SliverAppBar that contains the Storage widget and expands when dragged down
           SliverAppBar(
-            backgroundColor: const Color(0xFF6A85E6), // Fallback solid
+            backgroundColor: const Color(0xFF6A85E6), // Pin solid blue when collapsed so white text remains visible
             elevation: 0,
             pinned: true,
             floating: false,
             stretch: false, 
-            expandedHeight: 280.0,
-            collapsedHeight: 80.0,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(40),
-                bottomRight: Radius.circular(40),
-              ),
-            ),
+            expandedHeight: 230.0,
+            collapsedHeight: 60.0,
             title: const Padding(
               padding: EdgeInsets.only(left: 8.0),
               child: Text(
@@ -71,28 +65,17 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
                       Color(0xFF6A85E6),
                       Color(0xFF8FB0FF),
-                      Color(0xFFE5ECFF),
+                      Color(0xFFF5F7FA), // Fades seamlessly into scaffold
                     ],
                     stops: [0.0, 0.6, 1.0],
                   ),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(40),
-                    bottomRight: Radius.circular(40),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF6A85E6).withOpacity(0.2),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    )
-                  ],
                 ),
                 child: SafeArea(
                   child: Column(
