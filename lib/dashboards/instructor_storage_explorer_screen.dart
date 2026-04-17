@@ -130,7 +130,13 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
           name = _files.firstWhere((f) => f['id'].toString() == id)['name'];
         }
       } catch (e) { name = 'Unknown'; }
-      items.add({'id': id, 'type': type, 'name': name, 'mode': 'cut'});
+      items.add({
+        'id': id, 
+        'type': type, 
+        'name': name, 
+        'mode': 'cut',
+        'source_folder_id': _currentFolderId
+      });
     }
     setState(() {
       _clipboard = items;
@@ -153,7 +159,13 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
           name = _files.firstWhere((f) => f['id'].toString() == id)['name'];
         }
       } catch (e) { name = 'Unknown'; }
-      items.add({'id': id, 'type': type, 'name': name, 'mode': 'copy'});
+      items.add({
+        'id': id, 
+        'type': type, 
+        'name': name, 
+        'mode': 'copy',
+        'source_folder_id': _currentFolderId
+      });
     }
     setState(() {
       _clipboard = items;
@@ -223,21 +235,45 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
       currentName = _files.firstWhere((f) => f['id'].toString() == id)['name'];
     }
 
-    final controller = TextEditingController(text: currentName);
+    // Split name and extension for files
+    String base = currentName;
+    String ext = '';
+    if (type == 'file') {
+      int dotIndex = currentName.lastIndexOf('.');
+      if (dotIndex > 0 && dotIndex < currentName.length - 1) {
+        base = currentName.substring(0, dotIndex);
+        ext = currentName.substring(dotIndex);
+      }
+    }
+
+    final controller = TextEditingController(text: base);
+    // Auto-select the name part so the user can immediately overwrite it
+    controller.selection = TextSelection(baseOffset: 0, extentOffset: base.length);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text("Rename ${type == 'folder' ? 'Folder' : 'File'}"),
-        content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(hintText: "New Name")),
+        content: TextField(
+          controller: controller, 
+          autofocus: true, 
+          decoration: InputDecoration(
+            hintText: "New Name",
+            suffixText: ext.isNotEmpty ? ext : null,
+            suffixStyle: const TextStyle(color: Colors.grey),
+          ),
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
           ElevatedButton(
             onPressed: () async {
-              if (controller.text.isNotEmpty && controller.text != currentName) {
+              final newBase = controller.text.trim();
+              if (newBase.isNotEmpty && (newBase != base || ext.isNotEmpty)) {
+                final fullName = newBase + ext;
                 Navigator.pop(context);
                 setState(() => _isLoading = true);
                 try {
-                  await _apiService.renameEntry(id, type, controller.text);
+                  await _apiService.renameEntry(id, type, fullName);
                   _exitSelectionMode();
                   _fetchContent();
                 } catch (e) {
@@ -246,7 +282,7 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
                 }
               }
             }, 
-            child: const Text("Rename")
+            child: const Text("Rename"),
           ),
         ],
       ),
@@ -332,6 +368,11 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
       final List<Map<String, dynamic>> clipboardCopy = List.from(_clipboard!);
       
       for (var item in clipboardCopy) {
+        // Optimization: If pasting in same folder during CUT, it's a no-op
+        if (item['mode'] == 'cut' && item['source_folder_id'] == _currentFolderId) {
+          continue;
+        }
+
         String baseName = item['name'];
         String newName = baseName;
 
