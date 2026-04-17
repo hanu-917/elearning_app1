@@ -81,14 +81,21 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   _buildSearchBar(),
                   const SizedBox(height: 32),
                   // Quick Access (Icon row)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildQuickAccessItem(Icons.calendar_month_outlined, "Timetable"),
-                      _buildQuickAccessItem(Icons.grade_outlined, "Grades"),
-                      _buildQuickAccessItem(Icons.chat_bubble_outline, "Messages"),
-                      _buildQuickAccessItem(Icons.more_horiz, "More"),
-                    ],
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildQuickAccessItem(Icons.calendar_month_outlined, "Timetable"),
+                        const SizedBox(width: 28),
+                        _buildQuickAccessItem(Icons.grade_outlined, "Grades"),
+                        const SizedBox(width: 28),
+                        _buildQuickAccessItem(Icons.chat_bubble_outline, "Messages"),
+                        const SizedBox(width: 28),
+                        _buildQuickAccessItem(Icons.help_outline, "Help Me"),
+                        const SizedBox(width: 28),
+                        _buildQuickAccessItem(Icons.more_horiz, "More"),
+                      ],
+                    ),
                   ),
                 ],
               ),

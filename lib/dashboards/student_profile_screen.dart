@@ -147,6 +147,8 @@ class StudentProfileScreen extends StatelessWidget {
                   ),
                   _buildListRow(Icons.library_books_outlined, "Academic Record", ""),
                   _buildListRow(Icons.offline_bolt_outlined, "Offline Content", ""),
+                  _buildListRow(Icons.lock_outline, "Privacy & Security", ""),
+                  _buildListRow(Icons.language_outlined, "Language Preferences", ""),
                   _buildToggleRow(Icons.nights_stay_outlined, "Study Mode (Dark Theme)", false), // Toggled!
 
                   const SizedBox(height: 24),
@@ -156,7 +158,10 @@ class StudentProfileScreen extends StatelessWidget {
                     padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
                     child: Text("Support", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black45)),
                   ),
+                  _buildListRow(Icons.help_outline, "Help Center & FAQs", ""),
+                  _buildListRow(Icons.live_help_outlined, "Live Chat Support", "24/7 Virtual Assistant"),
                   _buildListRow(Icons.mail_outline, "Contact Department", "admin@csdept.edu"),
+                  _buildListRow(Icons.report_problem_outlined, "Report an Issue", ""),
                   
                   const SizedBox(height: 32),
                   
