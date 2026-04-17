@@ -108,6 +108,14 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
     _fetchContent();
   }
 
+  void _navigateToBreadcrumb(int index) {
+    if (index < 0 || index >= _navigationStack.length - 1) return;
+    setState(() {
+      _navigationStack = _navigationStack.sublist(0, index + 1);
+    });
+    _fetchContent();
+  }
+
   void _navigateBack() {
     if (_navigationStack.length > 1) {
       setState(() {
@@ -664,6 +672,49 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
   }
 
   Widget _buildBreadcrumbs() {
+    // Truncation logic: Show at most 3 items
+    const int maxVisible = 3;
+    final int total = _navigationStack.length;
+    final bool isTruncated = total > maxVisible;
+    
+    final List<Widget> items = [];
+
+    if (isTruncated) {
+      items.add(const Text("...", style: TextStyle(color: Colors.black45, fontWeight: FontWeight.bold)));
+      items.add(const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 4),
+        child: Text(">", style: TextStyle(color: Colors.black26, fontSize: 14)),
+      ));
+    }
+
+    final int start = isTruncated ? total - maxVisible : 0;
+    for (int i = start; i < total; i++) {
+      final bool isLast = i == total - 1;
+      final String name = _navigationStack[i]['name']!;
+      
+      items.add(Flexible(
+        child: GestureDetector(
+          onTap: () => _navigateToBreadcrumb(i),
+          child: Text(
+            name,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontWeight: isLast ? FontWeight.bold : FontWeight.w500,
+              color: isLast ? const Color(0xFF05398F) : Colors.black54,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ));
+
+      if (!isLast) {
+        items.add(const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Text(">", style: TextStyle(color: Colors.black26, fontSize: 14)),
+        ));
+      }
+    }
+
     return Container(
       height: 50,
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -671,19 +722,31 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
       decoration: BoxDecoration(color: const Color(0xFFE3F2FD), borderRadius: BorderRadius.circular(12)),
       child: Row(
         children: [
-          if (_navigationStack.length > 1) 
-            IconButton(icon: const Icon(Icons.arrow_back_rounded, size: 20, color: Color(0xFF05398F)), onPressed: _navigateBack)
+          if (total > 1) 
+            IconButton(
+              icon: const Icon(Icons.arrow_back_rounded, size: 20, color: Color(0xFF05398F)), 
+              onPressed: _navigateBack,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            )
           else
             const Icon(Icons.storage_rounded, size: 20, color: Color(0xFF05398F)),
           const SizedBox(width: 8),
-          const Icon(Icons.chevron_right_rounded, color: Colors.black26, size: 18),
-          const SizedBox(width: 8),
-          Expanded(child: Text(_currentFolderName, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF05398F)), overflow: TextOverflow.ellipsis)),
+          
+          Expanded(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: items,
+            ),
+          ),
+
           if (_clipboard != null && _clipboard!.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.paste_rounded, color: Colors.green),
+              icon: const Icon(Icons.paste_rounded, color: Colors.green, size: 20),
               tooltip: "Place here",
               onPressed: _pasteItems,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             ),
         ],
       ),
