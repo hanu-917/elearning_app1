@@ -144,59 +144,90 @@ class StudentProfileScreen extends StatelessWidget {
                     ),
                   ),
 
-                  // Performance Insight
+            // Wrap all inner elements inside White Cards
+            SizedBox(
+              width: double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // --- Group 1: Performance Insight ---
                   const Padding(
-                    padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
-                    child: Text("Performance Insight", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black45)),
+                    padding: EdgeInsets.only(left: 4, bottom: 8),
+                    child: Text("Performance Insight", style: TextStyle(color: Color(0xFF4A5568), fontSize: 13, fontWeight: FontWeight.bold)),
                   ),
-                  _buildListRow(Icons.check_circle_outline, "Strong subject", "Software Engineering"),
-                  _buildListRow(Icons.error_outline, "Weak subject", "Mathematics"),
-                  _buildListRow(Icons.trending_flat, "Overall trend", "Stable"),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        )
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        _buildListItem(Icons.check_circle_outline, "Strong subject", "Software Engineering"),
+                        _buildListItem(Icons.error_outline, "Weak subject", "Mathematics"),
+                        _buildListItem(Icons.trending_flat, "Overall trend", "Stable", isLast: true),
+                      ],
+                    ),
+                  ),
                   
                   const SizedBox(height: 24),
                   
-                  // Settings
+                  // --- Group 2: Settings & Support ---
                   const Padding(
-                    padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
-                    child: Text("Settings", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black45)),
+                    padding: EdgeInsets.only(left: 4, bottom: 8),
+                    child: Text("Settings & Support", style: TextStyle(color: Color(0xFF4A5568), fontSize: 13, fontWeight: FontWeight.bold)),
                   ),
-                  _buildListRow(Icons.library_books_outlined, "Academic Record", ""),
-                  _buildListRow(Icons.offline_bolt_outlined, "Offline Content", ""),
-                  _buildListRow(Icons.lock_outline, "Privacy & Security", ""),
-                  _buildListRow(Icons.language_outlined, "Language Preferences", ""),
-                  _buildToggleRow(Icons.nights_stay_outlined, "Study Mode (Dark Theme)", false), // Toggled!
-
-                  const SizedBox(height: 24),
-                  
-                  // Support
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 8.0, left: 4.0),
-                    child: Text("Support", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black45)),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        )
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        _buildListItem(Icons.lock_outline, "Privacy & Security", ""),
+                        _buildListItem(Icons.language_outlined, "Language Preferences", ""),
+                        _buildToggleItem(Icons.nights_stay_outlined, "Study Mode (Dark Theme)", false),
+                        _buildListItem(Icons.help_outline, "Help Center & FAQs", ""),
+                        _buildListItem(Icons.mail_outline, "Contact Department", "admin@csdept.edu"),
+                        _buildListItem(Icons.report_problem_outlined, "Report an Issue", "", isLast: true),
+                      ],
+                    ),
                   ),
-                  _buildListRow(Icons.help_outline, "Help Center & FAQs", ""),
-                  _buildListRow(Icons.mail_outline, "Contact Department", "admin@csdept.edu"),
-                  _buildListRow(Icons.report_problem_outlined, "Report an Issue", ""),
                   
                   const SizedBox(height: 32),
                   
                   // Dedicated Log Out Button
                   SizedBox(
                     width: double.infinity,
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(color: Colors.red.shade200, width: 1.5),
+                    height: 54,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                         ),
+                        elevation: 0,
                       ),
                       onPressed: () {},
                       child: const Text(
                         "Log Out",
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Colors.redAccent,
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -204,78 +235,95 @@ class StudentProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
           ],
         ),
+      ),
+        ],
+      ),
     );
   }
 
-  // Method mimics the clean minimalist list row structure from the image
-  Widget _buildListRow(IconData icon, String title, String subtitle, {VoidCallback? onTap}) {
-    return Column(
-      children: [
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              shape: BoxShape.circle,
+  // Dashboard-styled list item without standard gray dividers
+  Widget _buildListItem(IconData icon, String title, String subtitle, {bool isLast = false, VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap ?? () {},
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF6A85E6).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: const Color(0xFF6A85E6), size: 22),
             ),
-            child: Icon(icon, color: Colors.black54, size: 20),
-          ),
-          title: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Colors.black87,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E2843),
+                    ),
+                  ),
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(fontSize: 13, color: Color(0xFF4A5568)),
+                    ),
+                  ],
+                ],
+              ),
             ),
-          ),
-          subtitle: subtitle.isNotEmpty 
-            ? Text(
-                subtitle,
-                style: const TextStyle(fontSize: 13, color: Colors.black54),
-              )
-            : null,
-          trailing: subtitle.isEmpty ? const Icon(Icons.chevron_right, color: Colors.black26, size: 20) : null,
-          onTap: onTap ?? () {},
+            if (subtitle.isEmpty) 
+               const Icon(Icons.arrow_forward_ios_rounded, color: Colors.black26, size: 16),
+          ],
         ),
-        const Divider(height: 1, indent: 64, color: Colors.black12),
-      ],
+      ),
     );
   }
 
-  // New Toggle Method specifically constructed for tracking study mode
-  Widget _buildToggleRow(IconData icon, String title, bool value) {
-    return Column(
-      children: [
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          leading: Container(
-            padding: const EdgeInsets.all(8),
+  // Dashboard-styled toggle row
+  Widget _buildToggleItem(IconData icon, String title, bool value, {bool isLast = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: const Color(0xFF6A85E6).withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: Colors.black54, size: 20),
+            child: Icon(icon, color: const Color(0xFF6A85E6), size: 22),
           ),
-          title: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Colors.black87,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E2843),
+              ),
             ),
           ),
-          trailing: Switch(
+          Switch(
             value: value,
             onChanged: (val) {},
             activeColor: const Color(0xFF3B5BFF),
           ),
-        ),
-        const Divider(height: 1, indent: 64, color: Colors.black12),
-      ],
+        ],
+      ),
     );
   }
 }

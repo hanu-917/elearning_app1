@@ -268,18 +268,14 @@ class _StudentDashboardState extends State<StudentDashboard> {
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
+                        children: const [
+                          Text(
                             "Quick Actions",
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Color(0xFF1E2843), // dark blue
                             ),
-                          ),
-                          TextButton(
-                            onPressed: () {},
-                            child: const Text("See More", style: TextStyle(color: Color(0xFF3B5BFF), fontWeight: FontWeight.bold)),
                           ),
                         ],
                       ),
@@ -295,7 +291,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                             const SizedBox(width: 20),
                             _buildCircularQuickAction(Icons.chat_bubble_outline, "Group\nDiscussions"),
                             const SizedBox(width: 20),
-                            _buildCircularQuickAction(Icons.folder_outlined, "Course\nResources"),
+                            _buildCircularQuickAction(Icons.grid_view_rounded, "See More\nActions"),
                           ],
                         ),
                       ),

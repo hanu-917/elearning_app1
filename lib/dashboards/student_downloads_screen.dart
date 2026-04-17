@@ -33,7 +33,7 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
       slivers: [
           // The SliverAppBar that contains the Storage widget and expands when dragged down
           SliverAppBar(
-            backgroundColor: const Color(0xFF6A85E6), // Pin solid blue when collapsed so white text remains visible
+            backgroundColor: const Color(0xFF8FB0FF), // Lighter "slimmer" blue when collapsed
             elevation: 0,
             pinned: true,
             floating: false,
