@@ -106,7 +106,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
               BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Home'),
               BottomNavigationBarItem(icon: Icon(Icons.book_outlined), activeIcon: Icon(Icons.book), label: 'Courses'),
               BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), activeIcon: Icon(Icons.chat_bubble), label: 'Inbox'),
-              BottomNavigationBarItem(icon: Icon(Icons.download_for_offline_outlined), activeIcon: Icon(Icons.download_for_offline_outlined), label: 'Downloads'),
+              BottomNavigationBarItem(icon: Icon(Icons.cloud_download_outlined), activeIcon: Icon(Icons.cloud_download), label: 'Downloads'),
               BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
             ],
           ),
@@ -181,6 +181,19 @@ class _StudentDashboardState extends State<StudentDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const Text(
+                  "Continue Learning",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E2843),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildProgressCard(),
+                
+                const SizedBox(height: 32),
+                
                 const Text(
                   "Today's Classes",
                   style: TextStyle(
@@ -346,6 +359,84 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
   }
 
+  Widget _buildProgressCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1E2843), Color(0xFF2A3A60)], // Sleek dark blue
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1E2843).withOpacity(0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    "RECENTLY OPENED", 
+                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.0)
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  "Data Structures",
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  "Chapter 4: Binary Trees",
+                  style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 65,
+                height: 65,
+                child: CircularProgressIndicator(
+                  value: 0.65,
+                  strokeWidth: 6,
+                  backgroundColor: Colors.white.withOpacity(0.1),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF09AEF5)), // Cyan accent
+                  strokeCap: StrokeCap.round,
+                ),
+              ),
+              const Text(
+                "65%",
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              )
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
   Widget _buildTaskBlock(String title, String dueText, bool isUrgent) {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -401,46 +492,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
               color: isUrgent ? Colors.redAccent : Colors.grey,
               fontWeight: FontWeight.bold,
               fontSize: 11,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-    return Container(
-      width: 110,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE5ECFF),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: const Color(0xFF6A85E6), size: 24),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1E2843),
-              height: 1.2,
             ),
           ),
         ],
@@ -585,70 +636,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTaskCard(String title, String dueText, bool isUrgent) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFEAEA),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.assignment_outlined, size: 20, color: Colors.red.shade300), 
-              ),
-              if (isUrgent)
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            title,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-              color: Color(0xFF1E2843),
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            dueText,
-            style: TextStyle(
-              color: isUrgent ? Colors.redAccent : Colors.grey,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
             ),
           ),
         ],
