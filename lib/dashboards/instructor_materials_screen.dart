@@ -101,16 +101,26 @@ class _InstructorMaterialsScreenState extends State<InstructorMaterialsScreen> {
     });
   }
 
-  void _showUploadDialog() {
+  Future<void> _handleDirectUpload() async {
     if (_courses.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(behavior: SnackBarBehavior.floating, content: Text("You need to be assigned to a course first.")),
       );
       return;
     }
 
+    try {
+      FilePickerResult? result = await FilePicker.pickFiles();
+      if (result != null) {
+        if (!mounted) return;
+        _showCourseSelectionForUpload(result.files.first);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text("Error picking file: $e")));
+    }
+  }
+
+  void _showCourseSelectionForUpload(PlatformFile selectedFile) {
     String? selectedCourseId = _courses.first['id'];
-    String title = "";
-    PlatformFile? selectedFile;
 
     showModalBottomSheet(
       context: context,
@@ -134,8 +144,10 @@ class _InstructorMaterialsScreenState extends State<InstructorMaterialsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Upload Material", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
-                  const SizedBox(height: 20),
+                  const Text("Finalize Upload", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
+                  const SizedBox(height: 10),
+                  Text("File: ${selectedFile.name}", style: const TextStyle(color: Colors.black54)),
+                  const SizedBox(height: 25),
                   
                   // Course Dropdown
                   const Text("Select Course", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -157,41 +169,6 @@ class _InstructorMaterialsScreenState extends State<InstructorMaterialsScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 15),
-
-                  // File Picker
-                  const Text("File", style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 5),
-                  GestureDetector(
-                    onTap: () async {
-                      FilePickerResult? result = await FilePicker.pickFiles();
-                      if (result != null) {
-                        setSheetState(() => selectedFile = result.files.first);
-                      }
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF4F7FC),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.black12)
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.attach_file, color: Color(0xFF05398F)),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              selectedFile != null ? selectedFile!.name : "Tap to select a file",
-                              style: TextStyle(color: selectedFile != null ? Colors.black87 : Colors.black54),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
                   const SizedBox(height: 30),
 
                   // Upload Button
@@ -206,26 +183,23 @@ class _InstructorMaterialsScreenState extends State<InstructorMaterialsScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))
                           ),
                           onPressed: () async {
-                            if (selectedFile == null || selectedCourseId == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(behavior: SnackBarBehavior.floating, content: Text("Please select a course and a file.")));
-                              return;
-                            }
-                            
-                            String autoTitle = selectedFile!.name;
+                            if (selectedCourseId == null) return;
                             
                             setSheetState(() => isUploading = true);
                             try {
-                              await _apiService.uploadMaterial(selectedCourseId!, autoTitle, selectedFile!.path!);
+                              await _apiService.uploadMaterial(selectedCourseId!, selectedFile.name, selectedFile.path!);
                               if (!mounted) return;
                               Navigator.pop(context);
                               _fetchData(); // reload
                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(behavior: SnackBarBehavior.floating, content: Text("Uploaded Successfully")));
                             } catch (e) {
-                              setSheetState(() => isUploading = false);
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text(e.toString())));
+                              if (mounted) {
+                                setSheetState(() => isUploading = false);
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text(e.toString())));
+                              }
                             }
                           },
-                          child: const Text("Upload", style: TextStyle(color: Colors.white, fontSize: 16)),
+                          child: const Text("Upload Now", style: TextStyle(color: Colors.white, fontSize: 16)),
                         ),
                       )
                 ],
@@ -236,6 +210,7 @@ class _InstructorMaterialsScreenState extends State<InstructorMaterialsScreen> {
       }
     );
   }
+
 
   void _showRenameDialog(String id, String fullTitle) {
     // Separate the base name from the extension
@@ -429,13 +404,30 @@ class _InstructorMaterialsScreenState extends State<InstructorMaterialsScreen> {
                   Text("You are sharing ${_selectedMaterials.length} material(s).", style: const TextStyle(color: Colors.black54, fontSize: 14)),
                   const SizedBox(height: 20),
                   
-                  const Text("Course", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
+                  const Text("Select Courses", style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 5),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(color: const Color(0xFFF4F7FC), borderRadius: BorderRadius.circular(10)),
-                    child: Text(selectedCourseTitle, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF05398F), fontSize: 16)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(border: Border.all(color: Colors.black12), borderRadius: BorderRadius.circular(10)),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: _courses.any((c) => c['title'] == selectedCourseTitle || c['course_code'] == selectedCourseTitle) 
+                          ? _courses.firstWhere((c) => c['title'] == selectedCourseTitle || c['course_code'] == selectedCourseTitle)['id']
+                          : (_courses.isNotEmpty ? _courses.first['id'] : null),
+                        items: _courses.map((c) => DropdownMenuItem<String>(
+                          value: c['id'],
+                          child: Text(c['title'] ?? c['course_code']),
+                        )).toList(),
+                        onChanged: (val) {
+                          setSheetState(() {
+                            var match = _courses.firstWhere((c) => c['id'] == val);
+                            selectedCourseTitle = match['title'] ?? match['course_code'];
+                          });
+                        },
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 20),
 
@@ -777,7 +769,7 @@ class _InstructorMaterialsScreenState extends State<InstructorMaterialsScreen> {
               children: [
                 FloatingActionButton.extended(
                   heroTag: "upload_btn",
-                  onPressed: _showUploadDialog,
+                  onPressed: _handleDirectUpload,
                   backgroundColor: const Color(0xFF09AEF5),
                   elevation: 4,
                   icon: const Icon(Icons.cloud_upload_rounded, color: Colors.white),
