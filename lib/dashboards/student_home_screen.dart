@@ -122,13 +122,22 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   
                   const SizedBox(height: 32),
                   
-                  const Text(
-                    "Tasks",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E2843),
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Tasks",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E2843),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {},
+                        child: const Text("See More", style: TextStyle(color: Color(0xFF3366FF), fontWeight: FontWeight.bold)),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -145,13 +154,22 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                   ),
                   const SizedBox(height: 32),
                   
-                  const Text(
-                    "Quick Actions",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1E2843),
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Quick Actions",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1E2843),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {},
+                        child: const Text("See More", style: TextStyle(color: Color(0xFF3366FF), fontWeight: FontWeight.bold)),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   SingleChildScrollView(
