@@ -55,22 +55,35 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
   Future<void> _fetchInitialData() async {
     setState(() => _isLoading = true);
     try {
-      final results = await Future.wait([
-        if (widget.initialFolders == null) _apiService.getInstructorStorage(folderId: _currentFolderId),
-        _apiService.getInstructorCourses(),
-        _apiService.getInstructorTargets(),
-      ]);
+      final List<Future> futures = [];
+      int? storageIndex;
+      int? coursesIndex;
+      int? targetsIndex;
 
       if (widget.initialFolders == null) {
-        final storageData = results[0] as Map<String, dynamic>;
+        storageIndex = futures.length;
+        futures.add(_apiService.getInstructorStorage(folderId: _currentFolderId));
+      }
+      
+      coursesIndex = futures.length;
+      futures.add(_apiService.getInstructorCourses());
+      
+      targetsIndex = futures.length;
+      futures.add(_apiService.getInstructorTargets());
+
+      final results = await Future.wait(futures);
+
+      if (storageIndex != null) {
+        final storageData = results[storageIndex] as Map<String, dynamic>;
         _folders = storageData['folders'] ?? [];
         _files = storageData['files'] ?? [];
       } else {
-        _folders = widget.initialFolders!;
-        _files = widget.initialFiles!;
+        _folders = widget.initialFolders ?? [];
+        _files = widget.initialFiles ?? [];
       }
-      _courses = results[1] as List<dynamic>;
-      _targets = results[2] as List<dynamic>;
+      
+      _courses = results[coursesIndex] as List<dynamic>;
+      _targets = results[targetsIndex] as List<dynamic>;
       
       _applySort('name_asc'); // Pin and sort
     } catch (e) {
@@ -543,7 +556,6 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
         actions: _isSelectionMode ? [
           if (_selectedIds.length == 1)
             IconButton(icon: const Icon(Icons.edit_rounded, color: Colors.white), onPressed: _showRenameDialog, tooltip: "Rename"),
-          IconButton(icon: const Icon(Icons.share_rounded, color: Colors.white), onPressed: _showShareBottomSheet, tooltip: "Share"),
           IconButton(icon: const Icon(Icons.content_cut_rounded, color: Colors.white), onPressed: _handleMultiCut, tooltip: "Cut"),
           IconButton(icon: const Icon(Icons.content_copy_rounded, color: Colors.white), onPressed: _handleMultiCopy, tooltip: "Copy"),
           IconButton(icon: const Icon(Icons.delete_outline_rounded, color: Colors.white), onPressed: _deleteSelected, tooltip: "Delete"),
@@ -590,7 +602,7 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
                 leadingIcon: const Icon(Icons.share_rounded, size: 20, color: Color(0xFF09AEF5)),
                 onPressed: () {
                   setState(() => _isSelectionMode = true);
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Select items to share")));
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Tap on the items you wish to share.")));
                 },
                 child: const Text("Share Items"),
               ),
@@ -667,7 +679,34 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
               ),
             ],
           ),
-      floatingActionButton: null,
+      bottomNavigationBar: _isSelectionMode ? SafeArea(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -5))]
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            height: 55,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                if (_selectedIds.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(behavior: SnackBarBehavior.floating, content: Text("Please select at least one item.")));
+                } else {
+                  _showShareBottomSheet();
+                }
+              },
+              icon: const Icon(Icons.share_rounded, color: Colors.white),
+              label: const Text("Share Now", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF09AEF5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+            ),
+          ),
+        ),
+      ) : null,
     );
   }
 
@@ -852,8 +891,8 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
   void _showShareBottomSheet() {
     if (_selectedIds.isEmpty) return;
     
-    String? selectedCourseId = _courses.isNotEmpty ? _courses.first['id'] : null;
-    String? selectedDeptId = _targets.isNotEmpty ? _targets.first['id'].toString() : null;
+    String? selectedCourseId = _courses.isNotEmpty ? _courses.first['id'].toString() : null;
+    String? selectedDeptId = _targets.isNotEmpty ? _targets.first['id']?.toString() : null;
     
     // Helper to get sections for a dept
     List<String> getCleanedSections(String? deptId) {
@@ -913,8 +952,8 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
                         isExpanded: true,
                         value: selectedCourseId,
                         items: _courses.map((c) => DropdownMenuItem<String>(
-                          value: c['id'],
-                          child: Text(c['title'] ?? c['course_code']),
+                          value: c['id'].toString(),
+                          child: Text((c['title'] ?? c['course_code']).toString()),
                         )).toList(),
                         onChanged: (val) => setSheetState(() => selectedCourseId = val),
                       ),
@@ -965,13 +1004,18 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
                     child: ElevatedButton(
                        onPressed: () async {
                           final materialIds = _selectedIds.map((id) => id.split(':')[1]).toList();
+                          if (selectedCourseId == null || selectedDeptId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please select a course and department"), backgroundColor: Colors.orange));
+                            return;
+                          }
+
                           Navigator.pop(context);
                           setState(() => _isLoading = true);
                           try {
                             await _apiService.shareMaterials(
                               materialIds, 
-                              selectedCourseId!,
-                              selectedDeptId!, 
+                              selectedCourseId,
+                              selectedDeptId, 
                               selectedSection == "All Sections" ? null : selectedSection
                             );
                             _exitSelectionMode();
