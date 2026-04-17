@@ -62,6 +62,8 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
         setState(() {
           _folders = data['folders'] ?? [];
           _files = data['files'] ?? [];
+          
+          _applySort('name_asc'); // Default sort
           _isLoading = false;
         });
       }
@@ -91,10 +93,15 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
     }
   }
 
-  void _toggleSelection(String id) {
+  void _toggleSelection(String id, {bool isSystem = false}) {
+    if (isSystem) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("The Uploads folder cannot be modified or moved.")));
+      return;
+    }
     setState(() {
       if (_selectedIds.contains(id)) {
         _selectedIds.remove(id);
+        if (_selectedIds.isEmpty) _isSelectionMode = false;
       } else {
         _selectedIds.add(id);
         _isSelectionMode = true;
@@ -113,7 +120,17 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
     final List<Map<String, dynamic>> items = [];
     for (var selectionId in _selectedIds) {
       final parts = selectionId.split(':');
-      items.add({'id': parts[1], 'type': parts[0], 'mode': 'cut'});
+      final type = parts[0];
+      final id = parts[1];
+      String name = '';
+      try {
+        if (type == 'folder') {
+          name = _folders.firstWhere((f) => f['id'].toString() == id)['name'];
+        } else {
+          name = _files.firstWhere((f) => f['id'].toString() == id)['name'];
+        }
+      } catch (e) { name = 'Unknown'; }
+      items.add({'id': id, 'type': type, 'name': name, 'mode': 'cut'});
     }
     setState(() {
       _clipboard = items;
@@ -126,7 +143,17 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
     final List<Map<String, dynamic>> items = [];
     for (var selectionId in _selectedIds) {
       final parts = selectionId.split(':');
-      items.add({'id': parts[1], 'type': parts[0], 'mode': 'copy'});
+      final type = parts[0];
+      final id = parts[1];
+      String name = '';
+      try {
+        if (type == 'folder') {
+          name = _folders.firstWhere((f) => f['id'].toString() == id)['name'];
+        } else {
+          name = _files.firstWhere((f) => f['id'].toString() == id)['name'];
+        }
+      } catch (e) { name = 'Unknown'; }
+      items.add({'id': id, 'type': type, 'name': name, 'mode': 'copy'});
     }
     setState(() {
       _clipboard = items;
@@ -180,33 +207,237 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
     }
   }
 
-  void _showNewFolderDialog() {
-    final controller = TextEditingController();
+  void _showRenameDialog() {
+    if (_selectedIds.length != 1) return;
+    
+    final idStr = _selectedIds.first;
+    final parts = idStr.split(':');
+    final type = parts[0];
+    final id = parts[1];
+    
+    // Find item name
+    String currentName = '';
+    if (type == 'folder') {
+      currentName = _folders.firstWhere((f) => f['id'].toString() == id)['name'];
+    } else {
+      currentName = _files.firstWhere((f) => f['id'].toString() == id)['name'];
+    }
+
+    final controller = TextEditingController(text: currentName);
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("New Folder"),
-        content: TextField(controller: controller, decoration: const InputDecoration(hintText: "Folder Name"), autofocus: true),
+        title: Text("Rename ${type == 'folder' ? 'Folder' : 'File'}"),
+        content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(hintText: "New Name")),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
           ElevatedButton(
             onPressed: () async {
-              if (controller.text.isNotEmpty) {
+              if (controller.text.isNotEmpty && controller.text != currentName) {
                 Navigator.pop(context);
                 setState(() => _isLoading = true);
                 try {
-                  await _apiService.createFolder(controller.text, parentId: _currentFolderId);
+                  await _apiService.renameEntry(id, type, controller.text);
+                  _exitSelectionMode();
                   _fetchContent();
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Rename failed: $e")));
                   setState(() => _isLoading = false);
                 }
               }
             }, 
-            child: const Text("Create")
+            child: const Text("Rename")
           ),
         ],
       ),
+    );
+  }
+
+  String _incrementName(String name, String type) {
+    if (type == 'folder') {
+      // Folders treat dots as part of the name, not extensions
+      final regex = RegExp(r'_(\d+)$');
+      final match = regex.firstMatch(name);
+      if (match != null) {
+        int num = int.parse(match.group(1)!) + 1;
+        String base = name.substring(0, match.start);
+        return "${base}_$num";
+      } else {
+        return "${name}_1";
+      }
+    }
+
+    // For files, separate the extension accurately
+    int dotIndex = name.lastIndexOf('.');
+    // If no dot, or dot is first char (hidden file), or dot is last char
+    if (dotIndex <= 0 || dotIndex == name.length - 1) {
+      final regex = RegExp(r'_(\d+)$');
+      final match = regex.firstMatch(name);
+      if (match != null) {
+        int num = int.parse(match.group(1)!) + 1;
+        String base = name.substring(0, match.start);
+        return "${base}_$num";
+      } else {
+        return "${name}_1";
+      }
+    }
+
+    String base = name.substring(0, dotIndex);
+    String ext = name.substring(dotIndex);
+    
+    final regex = RegExp(r'_(\d+)$');
+    final match = regex.firstMatch(base);
+    if (match != null) {
+      int num = int.parse(match.group(1)!) + 1;
+      base = base.substring(0, match.start);
+      return "${base}_$num$ext";
+    } else {
+      return "${base}_1$ext";
+    }
+  }
+
+  void _applySort(String criteria) {
+    setState(() {
+      _folders.sort((a, b) {
+        // Always Pin Uploads to the very top in root
+        if (_currentFolderId == null) {
+          if (a['name'] == 'Uploads') return -1;
+          if (b['name'] == 'Uploads') return 1;
+        }
+        
+        if (criteria == 'name_asc') {
+          return a['name'].toString().toLowerCase().compareTo(b['name'].toString().toLowerCase());
+        } else if (criteria == 'date_desc') {
+          return b['created_at'].toString().compareTo(a['created_at'].toString());
+        }
+        return 0;
+      });
+
+      _files.sort((a, b) {
+        if (criteria == 'name_asc') {
+          return a['name'].toString().toLowerCase().compareTo(b['name'].toString().toLowerCase());
+        } else if (criteria == 'date_desc') {
+          return b['created_at'].toString().compareTo(a['created_at'].toString());
+        }
+        return 0;
+      });
+    });
+  }
+
+  Future<void> _pasteItems() async {
+    if (_clipboard == null || _clipboard!.isEmpty) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final List<Map<String, dynamic>> clipboardCopy = List.from(_clipboard!);
+      
+      for (var item in clipboardCopy) {
+        String baseName = item['name'];
+        String newName = baseName;
+        bool shouldBypassLocalCheck = false;
+
+        // Check for conflicts
+        while (_folders.any((f) => f['name'] == newName) || _files.any((f) => f['name'] == newName)) {
+          final bool? resolve = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text("Name Conflict"),
+              content: Text("An item named '$newName' already exists here. Would you like to rename the incoming item and place it?"),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Skip")),
+                TextButton(
+                  onPressed: () {
+                    newName = _incrementName(newName, item['type']);
+                    Navigator.pop(context, true);
+                  }, 
+                  child: const Text("Rename & Place")
+                ),
+              ],
+            )
+          );
+
+          if (resolve != true) {
+            newName = ''; // Skip marker
+            break;
+          }
+          // The loop will automatically check if the newly incremented name also exists
+        }
+
+        if (newName.isNotEmpty) {
+          if (item['mode'] == 'copy') {
+            await _apiService.duplicateEntry(item['id'], item['type'], _currentFolderId, newName: newName);
+          } else {
+            // Cut mode: Rename if name was changed, then move
+            if (newName != baseName) {
+              await _apiService.renameEntry(item['id'], item['type'], newName);
+            }
+            await _apiService.moveEntry(item['id'], item['type'], _currentFolderId);
+          }
+        }
+      }
+
+      setState(() => _clipboard = null);
+      _fetchContent();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Items placed successfully")));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Paste failed: $e")));
+      _fetchContent();
+    }
+  }
+
+  void _showNewFolderDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        String? errorText;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text("New Folder"),
+              content: TextField(
+                controller: controller, 
+                autofocus: true,
+                onChanged: (val) {
+                  if (errorText != null) setDialogState(() => errorText = null);
+                },
+                decoration: InputDecoration(
+                  hintText: "Folder Name",
+                  errorText: errorText,
+                  errorMaxLines: 2,
+                ), 
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (controller.text.isNotEmpty) {
+                      final String folderName = controller.text;
+                      // Check for duplicate name
+                      if (_folders.any((f) => f['name'].toString().toLowerCase() == folderName.toLowerCase()) || 
+                          _files.any((f) => f['name'].toString().toLowerCase() == folderName.toLowerCase())) {
+                        setDialogState(() => errorText = "A folder or file with this name already exists.");
+                        return;
+                      }
+
+                      Navigator.pop(context);
+                      setState(() => _isLoading = true);
+                      try {
+                        await _apiService.createFolder(folderName, parentId: _currentFolderId);
+                        _fetchContent();
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+                        setState(() => _isLoading = false);
+                      }
+                    }
+                  }, 
+                  child: const Text("Create")
+                ),
+              ],
+            );
+          }
+        );
+      },
     );
   }
 
@@ -226,24 +457,40 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
           style: TextStyle(color: _isSelectionMode ? Colors.white : const Color(0xFF05398F), fontWeight: FontWeight.bold),
         ),
         actions: _isSelectionMode ? [
-          IconButton(icon: const Icon(Icons.content_cut_rounded, color: Colors.white), onPressed: _handleMultiCut),
-          IconButton(icon: const Icon(Icons.content_copy_rounded, color: Colors.white), onPressed: _handleMultiCopy),
-          IconButton(icon: const Icon(Icons.delete_outline_rounded, color: Colors.white), onPressed: _deleteSelected),
+          if (_selectedIds.length == 1)
+            IconButton(icon: const Icon(Icons.edit_rounded, color: Colors.white), onPressed: _showRenameDialog, tooltip: "Rename"),
+          IconButton(icon: const Icon(Icons.content_cut_rounded, color: Colors.white), onPressed: _handleMultiCut, tooltip: "Cut"),
+          IconButton(icon: const Icon(Icons.content_copy_rounded, color: Colors.white), onPressed: _handleMultiCopy, tooltip: "Copy"),
+          IconButton(icon: const Icon(Icons.delete_outline_rounded, color: Colors.white), onPressed: _deleteSelected, tooltip: "Delete"),
           IconButton(
             icon: const Icon(Icons.select_all_rounded, color: Colors.white),
             onPressed: () {
-              final total = _folders.length + _files.length;
+              final selectableFolders = _folders.where((f) => f['name'] != 'Uploads' || _currentFolderId != null).toList();
+              final total = selectableFolders.length + _files.length;
+              
               setState(() {
                 if (_selectedIds.length == total) {
                   _selectedIds.clear();
+                  _isSelectionMode = false;
                 } else {
-                  for (var f in _folders) _selectedIds.add("folder:${f['id']}");
+                  for (var f in selectableFolders) _selectedIds.add("folder:${f['id']}");
                   for (var f in _files) _selectedIds.add("file:${f['id']}");
+                  _isSelectionMode = true;
                 }
               });
             },
+            tooltip: "Select All",
           ),
-        ] : [],
+        ] : [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.sort_rounded, color: Color(0xFF05398F)),
+            onSelected: _applySort,
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'name_asc', child: Text("Sort by Name")),
+              const PopupMenuItem(value: 'date_desc', child: Text("Sort by Date")),
+            ],
+          ),
+        ],
       ),
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator())
@@ -310,6 +557,12 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
           const Icon(Icons.chevron_right_rounded, color: Colors.black26, size: 18),
           const SizedBox(width: 8),
           Expanded(child: Text(_currentFolderName, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF05398F)), overflow: TextOverflow.ellipsis)),
+          if (_clipboard != null && _clipboard!.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.paste_rounded, color: Colors.green),
+              tooltip: "Place here",
+              onPressed: _pasteItems,
+            ),
         ],
       ),
     );
@@ -320,15 +573,17 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
     String date = _formatDate(item['created_at']);
     String info = type == 'folder' ? "Items" : _formatBytes(item['file_size_bytes'] ?? 0);
     
+    final bool isUploads = type == 'folder' && name == 'Uploads' && _currentFolderId == null;
+    
     return GestureDetector(
       onTap: () {
         if (_isSelectionMode) {
-          _toggleSelection("${type}:${item['id']}");
+          _toggleSelection("${type}:${item['id']}", isSystem: isUploads);
         } else if (type == 'folder') {
           _navigateToFolder(item['id'].toString(), name);
         }
       },
-      onLongPress: () => _toggleSelection("${type}:${item['id']}"),
+      onLongPress: () => _toggleSelection("${type}:${item['id']}", isSystem: isUploads),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
@@ -343,15 +598,30 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
             if (isSelected) const Padding(padding: EdgeInsets.only(right: 12), child: Icon(Icons.check_circle_rounded, color: Color(0xFF09AEF5), size: 24)),
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: _getIconColor(name, type).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-              child: Icon(_getIcon(name, type), color: _getIconColor(name, type), size: 26),
+              decoration: BoxDecoration(
+                color: isUploads ? const Color(0xFFE8F5E9) : _getIconColor(name, type).withOpacity(0.1), 
+                borderRadius: BorderRadius.circular(12)
+              ),
+              child: Icon(
+                isUploads ? Icons.folder_shared_rounded : _getIcon(name, type), 
+                color: isUploads ? Colors.green : _getIconColor(name, type), 
+                size: 26
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  Row(
+                    children: [
+                      Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      if (isUploads) ...[
+                        const SizedBox(width: 6),
+                        const Icon(Icons.lock_rounded, size: 14, color: Colors.black26),
+                      ]
+                    ],
+                  ),
                   Text(date, style: const TextStyle(color: Colors.black38, fontSize: 11)),
                 ],
               ),

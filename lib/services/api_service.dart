@@ -783,6 +783,31 @@ class ApiService {
     }
   }
 
+  Future<void> duplicateEntry(String id, String type, String? targetFolderId, {String? newName}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/instructor-files/duplicate'),
+        headers: {"Content-Type": "application/json", "Authorization": "Bearer $token"},
+        body: jsonEncode({
+          "id": id,
+          "type": type,
+          "target_folder_id": targetFolderId,
+          "new_name": newName
+        }),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode != 201 || data['success'] != true) {
+        throw Exception(data['message'] ?? 'Failed to duplicate $type');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
   Future<List<dynamic>> getRecycleBin() async {
     try {
       final prefs = await SharedPreferences.getInstance();
