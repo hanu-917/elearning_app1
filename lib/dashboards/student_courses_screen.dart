@@ -1,12 +1,56 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
+import 'course_details_screen.dart';
 
-class StudentCoursesScreen extends StatelessWidget {
+class StudentCoursesScreen extends StatefulWidget {
   const StudentCoursesScreen({super.key});
+
+  @override
+  State<StudentCoursesScreen> createState() => _StudentCoursesScreenState();
+}
+
+class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
+  final ApiService _apiService = ApiService();
+  List<dynamic> _courses = [];
+  bool _isLoading = true;
+
+  final List<Color> _cardColors = [
+    const Color(0xFF05398F),
+    const Color(0xFF6A1B9A),
+    const Color(0xFFFF8F00),
+    const Color(0xFF2E7D32),
+  ];
+  
+  final List<Color> _lightColors = [
+    const Color(0xFF09AEF5),
+    const Color(0xFFAB47BC),
+    const Color(0xFFFFCA28),
+    const Color(0xFF66BB6A),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCourses();
+  }
+
+  Future<void> _fetchCourses() async {
+    try {
+      final courses = await _apiService.getStudentCourses();
+      setState(() {
+        _courses = courses;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print(e);
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FC), // Match home screen background
+      backgroundColor: const Color(0xFFF4F7FC),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -20,125 +64,103 @@ class StudentCoursesScreen extends StatelessWidget {
             letterSpacing: -0.5,
           ),
         ),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF05398F).withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
+      ),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildOverviewCard(),
                 ),
+                const SizedBox(height: 35),
+                
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Enrolled Courses",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF05398F),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {},
+                        child: const Text("See All", style: TextStyle(color: Color(0xFF09AEF5), fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                
+                if (_courses.isEmpty)
+                  const Center(child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Text("You are not enrolled in any courses yet.", style: TextStyle(color: Colors.black38)),
+                  ))
+                else
+                  SizedBox(
+                    height: 230,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      itemCount: _courses.length,
+                      itemBuilder: (context, index) {
+                        final course = _courses[index];
+                        final colorIndex = index % _cardColors.length;
+                        return _buildCourseCard(
+                          course,
+                          _cardColors[colorIndex],
+                          _lightColors[colorIndex],
+                        );
+                      },
+                    ),
+                  ),
+                const SizedBox(height: 35),
+                
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    "Quick Actions",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF05398F)),
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: _buildActionChip("Assignments", Icons.assignment_turned_in_rounded, const Color(0xFF2E7D32), const Color(0xFF66BB6A))),
+                          const SizedBox(width: 15),
+                          Expanded(child: _buildActionChip("Grades", Icons.military_tech_rounded, const Color(0xFFFF8F00), const Color(0xFFFFCA28))),
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+                      Row(
+                        children: [
+                          Expanded(child: _buildActionChip("Schedule", Icons.calendar_month_rounded, const Color(0xFF05398F), const Color(0xFF09AEF5))),
+                          const SizedBox(width: 15),
+                          Expanded(child: _buildActionChip("Discussions", Icons.forum_rounded, const Color(0xFF6A1B9A), const Color(0xFFAB47BC))),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 40),
               ],
             ),
-            child: IconButton(
-              icon: const Icon(Icons.search_rounded, color: Color(0xFF05398F)),
-              onPressed: () {},
-            ),
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 10),
-            // Header Overview Card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: _buildOverviewCard(),
-            ),
-            const SizedBox(height: 35),
-            
-            // Horizontal Courses List
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "Active Courses",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF05398F),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {},
-                    child: const Text(
-                      "See All", 
-                      style: TextStyle(
-                        color: Color(0xFF09AEF5), 
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            
-            SizedBox(
-              height: 230,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                children: [
-                  _buildCourseCard("Computer Security", "4 Tasks Pending", 0.65, const Color(0xFF05398F), const Color(0xFF09AEF5), Icons.security),
-                  _buildCourseCard("Compiler Design", "1 Task Pending", 0.40, const Color(0xFF6A1B9A), const Color(0xFFAB47BC), Icons.code),
-                  _buildCourseCard("Complexity Theory", "Up to date", 0.82, const Color(0xFFFF8F00), const Color(0xFFFFCA28), Icons.psychology),
-                  _buildCourseCard("Research Methods", "Reading Assigned", 0.15, const Color(0xFF2E7D32), const Color(0xFF66BB6A), Icons.biotech),
-                ],
-              ),
-            ),
-            const SizedBox(height: 35),
-            
-            // Quick Actions section
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                "Quick Actions",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF05398F),
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(child: _buildActionChip("Assignments", Icons.assignment_turned_in_rounded, const Color(0xFF2E7D32), const Color(0xFF66BB6A))),
-                      const SizedBox(width: 15),
-                      Expanded(child: _buildActionChip("Grades", Icons.military_tech_rounded, const Color(0xFFFF8F00), const Color(0xFFFFCA28))),
-                    ],
-                  ),
-                  const SizedBox(height: 15),
-                  Row(
-                    children: [
-                      Expanded(child: _buildActionChip("Schedule", Icons.calendar_month_rounded, const Color(0xFF05398F), const Color(0xFF09AEF5))),
-                      const SizedBox(width: 15),
-                      Expanded(child: _buildActionChip("Discussions", Icons.forum_rounded, const Color(0xFF6A1B9A), const Color(0xFFAB47BC))),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 40),
-          ],
-        ),
-      ),
     );
   }
 
@@ -153,11 +175,7 @@ class StudentCoursesScreen extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF09AEF5).withOpacity(0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
+          BoxShadow(color: const Color(0xFF09AEF5).withOpacity(0.35), blurRadius: 20, offset: const Offset(0, 10)),
         ],
       ),
       child: Row(
@@ -168,88 +186,42 @@ class StudentCoursesScreen extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    "Spring 2026",
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12),
-                  ),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                  child: const Text("Spring 2026", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12)),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  "Great work!",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                  ),
-                ),
+                const Text("Welcome Back!", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                Text(
-                  "You have completed 60% of your weekly goals.",
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.85),
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
+                Text("Check your courses for new materials.", style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14)),
               ],
             ),
           ),
           const SizedBox(width: 20),
-          // Circular Progress 
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 80,
-                height: 80,
-                child: CircularProgressIndicator(
-                  value: 0.6,
-                  strokeWidth: 8,
-                  backgroundColor: Colors.white.withOpacity(0.2),
-                  strokeCap: StrokeCap.round,
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              const Text(
-                "60%",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 18,
-                ),
-              ),
-            ],
-          )
+          const Icon(Icons.school_rounded, color: Colors.white, size: 60),
         ],
       ),
     );
   }
 
-  Widget _buildCourseCard(String title, String subtitle, double progress, Color darkColor, Color lightColor, IconData icon) {
+  Widget _buildCourseCard(dynamic course, Color darkColor, Color lightColor) {
     return Container(
       width: 170,
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 5))],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(24),
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => CourseDetailsScreen(course: course, themeColor: darkColor)),
+            );
+          },
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -257,42 +229,27 @@ class StudentCoursesScreen extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: lightColor.withOpacity(0.15),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: darkColor, size: 30),
+                  decoration: BoxDecoration(color: lightColor.withOpacity(0.15), shape: BoxShape.circle),
+                  child: Icon(_getIcon(course['title']), color: darkColor, size: 30),
                 ),
                 const Spacer(),
                 Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF05398F),
-                    height: 1.2,
-                  ),
+                  course['title'] ?? '',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF05398F), height: 1.2),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.black54,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  course['instructor_name'] ?? 'Not Assigned',
+                  style: const TextStyle(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 16),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 8,
-                    backgroundColor: Colors.grey.shade100,
-                    valueColor: AlwaysStoppedAnimation<Color>(lightColor),
-                  ),
+                Text(
+                  course['course_code'] ?? '',
+                  style: TextStyle(fontSize: 12, color: lightColor, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -302,19 +259,23 @@ class StudentCoursesScreen extends StatelessWidget {
     );
   }
 
+  IconData _getIcon(String? title) {
+    if (title == null) return Icons.book;
+    final t = title.toLowerCase();
+    if (t.contains('security')) return Icons.security;
+    if (t.contains('code') || t.contains('compiler')) return Icons.code;
+    if (t.contains('research')) return Icons.biotech;
+    if (t.contains('theory')) return Icons.psychology;
+    return Icons.menu_book_rounded;
+  }
+
   Widget _buildActionChip(String label, IconData icon, Color darkColor, Color lightColor) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.shade100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 4))],
       ),
       child: Material(
         color: Colors.transparent,
@@ -327,21 +288,14 @@ class StudentCoursesScreen extends StatelessWidget {
               children: [
                 Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: lightColor.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  decoration: BoxDecoration(color: lightColor.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
                   child: Icon(icon, color: darkColor, size: 24),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Text(
                     label,
-                    style: TextStyle(
-                      color: Colors.blueGrey.shade800,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
+                    style: TextStyle(color: Colors.blueGrey.shade800, fontWeight: FontWeight.bold, fontSize: 15),
                   ),
                 ),
               ],
@@ -352,3 +306,4 @@ class StudentCoursesScreen extends StatelessWidget {
     );
   }
 }
+

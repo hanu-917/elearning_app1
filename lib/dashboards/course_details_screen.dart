@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 
 class CourseDetailsScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   List<dynamic> _chapters = [];
   Map<String, List<dynamic>> _chapterMaterials = {};
   bool _isLoading = true;
+  bool _isInstructor = false;
 
   @override
   void initState() {
@@ -27,6 +29,10 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   Future<void> _fetchDetails() async {
     setState(() => _isLoading = true);
     try {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final role = prefs.getString('user_role');
+      setState(() => _isInstructor = role == 'instructor');
+
       final chapters = await _apiService.getCourseChapters(widget.course['id'].toString());
       setState(() => _chapters = chapters);
       
@@ -41,7 +47,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     } catch (e) {
       print("Error fetching details: $e");
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -204,11 +210,12 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                     ],
                   ),
                 ),
-                IconButton(
-                  onPressed: () => _showShareDialog(chapter),
-                  icon: Icon(Icons.add_circle_outline_rounded, color: widget.themeColor),
-                  tooltip: "Share material to this chapter",
-                ),
+                if (_isInstructor)
+                  IconButton(
+                    onPressed: () => _showShareDialog(chapter),
+                    icon: Icon(Icons.add_circle_outline_rounded, color: widget.themeColor),
+                    tooltip: "Share material to this chapter",
+                  ),
               ],
             ),
           ),

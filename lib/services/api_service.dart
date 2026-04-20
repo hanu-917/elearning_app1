@@ -56,15 +56,36 @@ class ApiService {
     }
   }
 
-  Future<List<dynamic>> getInstructorCourses() async {
-    print("Fetching Instructor Courses from: $baseUrl/courses/instructor");
+  Future<List<dynamic>> getStudentCourses() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
 
-      if (token == null) {
-        throw Exception("You are not logged in");
+      final response = await http.get(
+        Uri.parse('$baseUrl/courses/student'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'] ?? [];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load courses');
       }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
+  Future<List<dynamic>> getInstructorCourses() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
 
       final response = await http.get(
         Uri.parse('$baseUrl/courses/instructor'),
