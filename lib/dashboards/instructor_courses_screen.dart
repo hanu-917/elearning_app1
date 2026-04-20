@@ -4,6 +4,7 @@ import 'instructor_materials_screen.dart';
 import 'instructor_groups_screen.dart';
 import 'instructor_assessments_screen.dart';
 import 'instructor_grades_screen.dart';
+import 'course_details_screen.dart';
 
 class InstructorCoursesScreen extends StatefulWidget {
   const InstructorCoursesScreen({super.key});
@@ -226,7 +227,12 @@ class _InstructorCoursesScreenState extends State<InstructorCoursesScreen> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => InstructorAssessmentsScreen(initialCourseId: course['id'].toString())),
+              MaterialPageRoute(
+                builder: (context) => CourseDetailsScreen(
+                  course: course,
+                  themeColor: avatarColor,
+                ),
+              ),
             );
           },
           child: Padding(

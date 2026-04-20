@@ -162,6 +162,28 @@ class ApiService {
     }
   }
 
+  Future<List<dynamic>> getCourseChapters(String courseId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/courses/$courseId/chapters'),
+        headers: {"Authorization": "Bearer $token"},
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'] ?? [];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load chapters');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
   Future<dynamic> getInstructorTargets() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -225,7 +247,7 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> shareMaterials(List<String> materialIds, String? courseId, String? departmentId, String? section) async {
+  Future<Map<String, dynamic>> shareMaterials(List<String> materialIds, String? courseId, String? departmentId, String? section, {String? chapterId}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
@@ -235,6 +257,7 @@ class ApiService {
         "material_ids": materialIds,
         "course_id": courseId,
         "department_id": departmentId,
+        "chapter_id": chapterId,
       };
       if (section != null) body["section"] = section;
 
@@ -246,6 +269,31 @@ class ApiService {
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['success'] == true) return data;
       throw Exception(data['message'] ?? 'Failed to share materials');
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
+  Future<List<dynamic>> getMaterialsByCourse(String courseId, {String? chapterId}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      String url = '$baseUrl/materials/course/$courseId';
+      if (chapterId != null) url += '?chapter_id=$chapterId';
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {"Authorization": "Bearer $token"},
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'] ?? [];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load materials');
+      }
     } catch (e) {
       throw Exception('Server Error: $e');
     }
