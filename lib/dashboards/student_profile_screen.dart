@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart'; 
 import '../auth/welcome_screen.dart';
+import 'student_profile_account_screen.dart';
+import 'student_profile_downloads_screen.dart';
+import 'student_profile_settings_screen.dart';
+import 'help_support_screen.dart';
+import 'student_profile_ask_question_screen.dart';
 
 class StudentProfileScreen extends StatefulWidget {
   const StudentProfileScreen({super.key});
@@ -136,12 +141,22 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _buildProfileOption(Icons.person_rounded, "Account", Colors.blue),
-                  _buildProfileOption(Icons.download_rounded, "Downloads", Colors.green, subtitle: "Manage download memory usage limit"),
-                  _buildProfileOption(Icons.settings_rounded, "Settings", Colors.grey.shade700),
-                  _buildProfileOption(Icons.security_rounded, "Privacy and Security", Colors.red),
-                  _buildProfileOption(Icons.help_outline_rounded, "Support and Help (FAQ)", Colors.purple),
-                  _buildProfileOption(Icons.question_answer_rounded, "Ask a Question", Colors.orange),
+                  _buildProfileOption(Icons.person_rounded, "Account", Colors.blue, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileAccountScreen()));
+                  }),
+                  _buildProfileOption(Icons.download_rounded, "Downloads", Colors.green, subtitle: "Manage download memory usage limit", onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileDownloadsScreen()));
+                  }),
+                  _buildProfileOption(Icons.settings_rounded, "Settings", Colors.grey.shade700, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileSettingsScreen()));
+                  }),
+                  _buildProfileOption(Icons.security_rounded, "Privacy and Security", Colors.red, onTap: () {}),
+                  _buildProfileOption(Icons.help_outline_rounded, "Support and Help (FAQ)", Colors.purple, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
+                  }),
+                  _buildProfileOption(Icons.question_answer_rounded, "Ask a Question", Colors.orange, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileAskQuestionScreen()));
+                  }),
                 ],
               ),
             ),
@@ -187,7 +202,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     );
   }
 
-  Widget _buildProfileOption(IconData icon, String title, Color color, {String? subtitle}) {
+  Widget _buildProfileOption(IconData icon, String title, Color color, {String? subtitle, VoidCallback? onTap}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -205,7 +220,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {},
+          onTap: onTap ?? () {},
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(

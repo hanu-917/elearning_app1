@@ -11,7 +11,7 @@ class StudentProfileAccountScreen extends StatefulWidget {
 class _StudentProfileAccountScreenState extends State<StudentProfileAccountScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _groupNameController = TextEditingController();
-  String _fullName = '';
+  String _studentId = '';
 
   @override
   void initState() {
@@ -22,9 +22,7 @@ class _StudentProfileAccountScreenState extends State<StudentProfileAccountScree
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      String fn = prefs.getString('first_name') ?? 'Student';
-      String ln = prefs.getString('last_name') ?? '';
-      _fullName = "$fn $ln".trim();
+      _studentId = prefs.getString('institutional_id') ?? 'BDU-123456';
       _usernameController.text = prefs.getString('username') ?? 'student_user';
       _groupNameController.text = prefs.getString('group_name') ?? 'CS Group A';
     });
@@ -62,7 +60,7 @@ class _StudentProfileAccountScreenState extends State<StudentProfileAccountScree
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
             ),
             const SizedBox(height: 30),
-            _buildReadOnlyField("Full Name (Cannot be changed)", _fullName),
+            _buildReadOnlyField("Student ID (Cannot be changed)", _studentId),
             const SizedBox(height: 20),
             _buildEditableField("Username", _usernameController, Icons.alternate_email_rounded),
             const SizedBox(height: 20),
