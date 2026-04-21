@@ -12,8 +12,8 @@ class _StudentProfileAskQuestionScreenState extends State<StudentProfileAskQuest
   final List<Map<String, dynamic>> _messages = [
     {
       "isMe": false,
-      "text": "Hello! How can we help you today?",
-      "time": "10:00 AM"
+      "text": "Please leave your question below. An admin will review and respond to your inquiry as soon as possible.",
+      "time": "System Notice"
     }
   ];
 

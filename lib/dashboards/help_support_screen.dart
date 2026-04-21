@@ -40,7 +40,6 @@ class HelpSupportScreen extends StatelessWidget {
             const SizedBox(height: 40),
             const Text("Need Help?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
             const SizedBox(height: 15),
-            _buildContactTile(Icons.support_agent_rounded, "Ticketing System", "Create a support ticket for technical issues", () {}),
             _buildContactTile(Icons.email_outlined, "Email Admin", "admin@bdu.edu.et", () {}),
             _buildContactTile(Icons.phone_in_talk_rounded, "Call Admin", "+251 911 234 567", () {}),
             
