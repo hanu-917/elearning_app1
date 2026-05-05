@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:flutter/material.dart';
+import '../dashboards/file_viewer_screen.dart';
 
 class ApiService {
   
@@ -1210,7 +1212,7 @@ class ApiService {
     }
   }
 
-  Future<void> downloadAndOpenFile(String filePath) async {
+  Future<void> downloadAndOpenFile(String filePath, {BuildContext? context}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
@@ -1243,9 +1245,19 @@ class ApiService {
         final File file = File('${dir.path}/$fileName');
         await file.writeAsBytes(response.bodyBytes);
         
-        final result = await OpenFilex.open(file.path);
-        if (result.type != ResultType.done) {
-          throw Exception(result.message);
+        if (context != null && ['txt', 'docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls'].contains(fileName.split('.').last.toLowerCase())) {
+          if (!context.mounted) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FileViewerScreen(filePath: file.path, fileName: fileName)
+            ),
+          );
+        } else {
+          final result = await OpenFilex.open(file.path);
+          if (result.type != ResultType.done) {
+            throw Exception(result.message);
+          }
         }
       } else {
         throw Exception("Server returned ${response.statusCode}");

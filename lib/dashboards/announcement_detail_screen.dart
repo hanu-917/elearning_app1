@@ -618,7 +618,7 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
       );
     }
     try {
-      await _apiService.downloadAndOpenFile(url);
+      await _apiService.downloadAndOpenFile(url, context: context);
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(
