@@ -1212,6 +1212,25 @@ class ApiService {
     }
   }
 
+  Future<bool> isFileDownloaded(String filePath) async {
+    if (filePath.isEmpty) return false;
+    try {
+      Directory dir;
+      if (Platform.isAndroid) {
+        dir = Directory('/storage/emulated/0/Download/ELMS');
+      } else {
+        dir = Directory('${(await getApplicationDocumentsDirectory()).path}/ELMS');
+      }
+      String fileName = filePath.split('/').last;
+      if (fileName.isEmpty || !fileName.contains('.')) return false;
+      final file = File('${dir.path}/$fileName');
+      return await file.exists();
+    } catch (_) {
+      return false;
+    }
+  }
+
+
   Future<void> downloadAndOpenFile(String filePath, {BuildContext? context}) async {
     try {
       final prefs = await SharedPreferences.getInstance();

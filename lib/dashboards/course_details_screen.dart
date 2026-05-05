@@ -404,10 +404,19 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
               color: isSelected ? widget.themeColor : widget.themeColor.withOpacity(0.1), 
               borderRadius: BorderRadius.circular(10)
             ),
-            child: Icon(
-              isSelected ? Icons.check_rounded : Icons.description_rounded, 
-              color: isSelected ? Colors.white : widget.themeColor, 
-              size: 20
+            child: FutureBuilder<bool>(
+              future: material['file_path'] != null ? _apiService.isFileDownloaded(material['file_path']) : Future.value(false),
+              builder: (context, snapshot) {
+                IconData defaultIcon = Icons.description_rounded;
+                if (snapshot.connectionState == ConnectionState.done && snapshot.data == false && !_isInstructor) {
+                  defaultIcon = Icons.download_rounded;
+                }
+                return Icon(
+                  isSelected ? Icons.check_rounded : defaultIcon, 
+                  color: isSelected ? Colors.white : widget.themeColor, 
+                  size: 20
+                );
+              }
             ),
           ),
           title: Text(material['title'] ?? '', 
