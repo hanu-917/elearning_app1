@@ -4,7 +4,10 @@ import 'package:intl/intl.dart';
 import 'system_messages_screen.dart';
 import 'student_menu_screen.dart';
 import 'student_courses_screen.dart';
+import 'chat_detail_screen.dart';
+import 'student_assignments_screen.dart';
 import '../services/api_service.dart';
+import 'package:file_picker/file_picker.dart';
 
 class StudentHomeScreen extends StatefulWidget {
   const StudentHomeScreen({super.key});
@@ -240,7 +243,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                                child: CircularProgressIndicator(strokeWidth: 3),
                              ),
                            )
-                        else if (_pendingTasks.isEmpty)
+                        else if (_pendingTasks.isEmpty || _pendingTasks.where((task) {
+                            final isSub = task['is_submitted'];
+                            return isSub == false || isSub == null || isSub == 0 || isSub == 'false';
+                          }).isEmpty)
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),
@@ -248,20 +254,13 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16)
                             ),
-                            child: const Center(child: Text("No assignments found", style: TextStyle(color: Colors.grey))),
+                            child: const Center(child: Text("No pending assignments", style: TextStyle(color: Colors.grey))),
                           )
                         else
-                          ..._pendingTasks.take(5).map((task) {
-                            final bool urgent = _isUrgent(task['due_date'].toString());
-                            return _buildTaskItem(
-                              task['title'].toString(),
-                              task['course_title']?.toString() ?? "General",
-                              _getDueString(task['due_date'].toString()),
-                              urgent ? Colors.orange : Colors.blue,
-                              urgent,
-                              task['is_group_assignment'] == true
-                            );
-                          }),
+                          ..._pendingTasks.where((task) {
+                            final isSub = task['is_submitted'];
+                            return isSub == false || isSub == null || isSub == 0 || isSub == 'false';
+                          }).take(5).map((task) => _buildTaskItem(task)),
                       ],
                     ),
                   ),
@@ -461,8 +460,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Materials section coming soon!")));
         }),
         _buildIconBtn(Icons.assignment_rounded, "Tasks", const Color(0xFFE3F2FD), Colors.blue, onTap: () {
-           // Future: Navigate to All Tasks
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("All tasks section coming soon!")));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentAssignmentsScreen()));
         }),
         _buildIconBtn(Icons.groups_rounded, "Groups", const Color(0xFFE0F7FA), Colors.cyan, onTap: () {
           // Future: Navigate to StudentGroups
@@ -517,7 +515,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     );
   }
 
-  Widget _buildTaskItem(String title, String courseTitle, String dueTime, Color accent, bool isUrgent, bool isGroup) {
+  Widget _buildTaskItem(Map<String, dynamic> task) {
+    final String title = task['title'].toString();
+    final String courseTitle = task['course_title']?.toString() ?? "General";
+    final String dueTime = _getDueString(task['due_date'].toString());
+    final bool isUrgent = _isUrgent(task['due_date'].toString());
+    final bool isGroup = task['is_group_assignment'] == true;
+    final Color accent = isUrgent ? Colors.orange : Colors.blue;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -535,7 +540,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {},
+          onTap: () => _showTaskOptions(task),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -604,6 +609,105 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         ),
       ),
     );
+  }
+
+  void _showTaskOptions(Map<String, dynamic> task) {
+    final bool isGroup = task['is_group_assignment'] == true;
+    
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(task['title'], 
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF05398F))
+              ),
+              const SizedBox(height: 8),
+              Text(task['course_title'] ?? "General", 
+                style: const TextStyle(fontSize: 14, color: Colors.grey)
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: const Icon(Icons.upload_file_rounded, color: Colors.blue),
+                title: const Text("Upload Submission", style: TextStyle(fontWeight: FontWeight.w600)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _handleFileUpload(task);
+                },
+              ),
+              if (isGroup)
+                ListTile(
+                  leading: const Icon(Icons.chat_bubble_rounded, color: Colors.cyan),
+                  title: const Text("Open Group Conversation", style: TextStyle(fontWeight: FontWeight.w600)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    if (task['group_id'] != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChatDetailScreen(
+                            groupId: task['group_id'].toString(),
+                            name: task['group_title'] ?? "Group Chat",
+                            isGroup: true,
+                          ),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Group information not found."))
+                      );
+                    }
+                  },
+                ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handleFileUpload(Map<String, dynamic> task) async {
+    try {
+      FilePickerResult? result = await FilePicker.pickFiles();
+
+      if (result != null) {
+        String? filePath = result.files.single.path;
+        if (filePath != null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Uploading file..."))
+            );
+          }
+          
+          await _apiService.submitAssignment(
+            task['id'].toString(), 
+            filePath,
+            groupId: task['group_id']?.toString()
+          );
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Assignment submitted successfully!"))
+            );
+            _fetchPendingTasks(); // Refresh tasks
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Upload failed: $e"))
+        );
+      }
+    }
   }
 
   Widget _buildScheduleTask(String title, String timeDetails, Color accent) {

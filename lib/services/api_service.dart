@@ -482,6 +482,36 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> submitAssignment(String assignmentId, String filePath, {String? groupId}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/assignments/submit'));
+      request.headers['Authorization'] = 'Bearer $token';
+      
+      request.fields['assignment_id'] = assignmentId;
+      if (groupId != null) {
+        request.fields['group_id'] = groupId;
+      }
+      
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return data;
+      } else {
+        throw Exception(data['message'] ?? 'Submission failed');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
   Future<Map<String, dynamic>> createAssessment(Map<String, dynamic> assessmentData, {String? filePath}) async {
 
     try {
