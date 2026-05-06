@@ -141,19 +141,15 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _buildProfileOption(Icons.person_rounded, "Account", Colors.blue, onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileAccountScreen()));
-                  }),
-                  _buildProfileOption(Icons.download_rounded, "Downloads", Colors.green, subtitle: "Manage download memory usage limit", onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileDownloadsScreen()));
-                  }),
                   _buildProfileOption(Icons.settings_rounded, "Settings", Colors.grey.shade700, onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileSettingsScreen()));
                   }),
                   _buildProfileOption(Icons.security_rounded, "Privacy and Security", Colors.red, onTap: () {}),
-                  _buildProfileOption(Icons.help_outline_rounded, "Support and Help (FAQ)", Colors.purple, onTap: () {
+                  _buildProfileOption(Icons.help_outline_rounded, "Help Center", Colors.purple, onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
                   }),
+                  _buildProfileOption(Icons.feedback_outlined, "Send Feedback", Colors.teal, onTap: () {}),
+                  _buildProfileOption(Icons.info_outline_rounded, "About ELMS", Colors.blueGrey, onTap: () {}),
                   _buildProfileOption(Icons.question_answer_rounded, "Ask a Question", Colors.orange, onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileAskQuestionScreen()));
                   }),
