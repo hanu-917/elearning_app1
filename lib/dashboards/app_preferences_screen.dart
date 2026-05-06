@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'student_profile_downloads_screen.dart';
 
 class AppPreferencesScreen extends StatefulWidget {
   const AppPreferencesScreen({super.key});
@@ -92,6 +93,34 @@ class _AppPreferencesScreenState extends State<AppPreferencesScreen> {
                 _buildLayoutOption('List', Icons.view_list_rounded),
               ],
             ),
+            
+            const SizedBox(height: 30),
+
+            // Downloads & Storage
+            const Text("Offline Media", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 15),
+            _buildPreferenceCard(
+              child: ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.download_for_offline_rounded, color: Colors.amber),
+                ),
+                title: const Text("Download Settings", style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text("Manage offline storage and limits"),
+                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.black26),
+                onTap: () {
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (context) => const StudentProfileDownloadsScreen())
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
           ],
         ),
       ),

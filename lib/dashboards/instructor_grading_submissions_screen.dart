@@ -416,6 +416,7 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
     }
 
     String fileName = item['file_path']?.toString().split('/').last ?? 'submission.file';
+    String displayFileName = isGroup ? "Group Submission" : "$displayName's Submission";
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -554,29 +555,11 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(fileName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87), overflow: TextOverflow.ellipsis),
-                        const Text("Click to view", style: TextStyle(color: Colors.black54, fontSize: 11)),
+                        Text(displayFileName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87), overflow: TextOverflow.ellipsis),
+                        const Text("Click to view submission", style: TextStyle(color: Colors.black54, fontSize: 12)),
                       ],
                     ),
                   ),
-                  IconButton(
-                    onPressed: () async {
-                      if (item['file_path'] != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening material...")));
-                        try {
-                          await _apiService.downloadAndOpenFile(item['file_path'], context: context, fileName: fileName);
-                          setState(() {});
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-                          }
-                        }
-                      }
-                    },
-                    icon: const Icon(Icons.remove_red_eye_rounded, color: Color(0xFF05398F)),
-                    constraints: const BoxConstraints(),
-                    padding: EdgeInsets.zero,
-                  )
                 ],
               ),
             ),

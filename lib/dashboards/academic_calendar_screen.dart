@@ -150,7 +150,18 @@ class _AcademicCalendarScreenState extends State<AcademicCalendarScreen> {
                     color: iconColor.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: Icon(iconData, color: iconColor, size: 30),
+                  child: FutureBuilder<bool>(
+                    future: path.isNotEmpty ? _apiService.isFileDownloaded(path) : Future.value(false),
+                    builder: (context, snapshot) {
+                      IconData currentIcon = iconData;
+                      Color currentColor = iconColor;
+                      if (snapshot.connectionState == ConnectionState.done && snapshot.data == false) {
+                        currentIcon = Icons.download_rounded;
+                        currentColor = Colors.grey;
+                      }
+                      return Icon(currentIcon, color: currentColor, size: 30);
+                    }
+                  ),
                 ),
                 const SizedBox(width: 18),
                 Expanded(

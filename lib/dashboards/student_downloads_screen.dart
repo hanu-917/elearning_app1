@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:math';
+import '../services/api_service.dart';
 
 class StudentDownloadsScreen extends StatefulWidget {
   const StudentDownloadsScreen({super.key});
@@ -20,8 +21,7 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
   @override
   void initState() {
     super.initState();
-    // Start scrolled down exactly enough to hide the 190px of expanded flexible space
-    _scrollController = ScrollController(initialScrollOffset: 190.0);
+    _scrollController = ScrollController();
     _loadDownloadedFiles();
   }
 
@@ -76,7 +76,7 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
       backgroundColor: const Color(0xFFF4F7FC),
       body: CustomScrollView(
         controller: _scrollController,
-        physics: const _LessStretchyScrollPhysics(parent: AlwaysScrollableScrollPhysics()), 
+        physics: const BouncingScrollPhysics(), 
         slivers: [
           // The SliverAppBar that contains the Storage widget and expands when dragged down
           SliverAppBar(
@@ -84,9 +84,6 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
             elevation: 0,
             pinned: true,
             floating: false,
-            stretch: false, 
-            expandedHeight: 250.0,
-            collapsedHeight: 60.0,
             title: const Text(
               "Downloads",
               style: TextStyle(color: Color(0xFF05398F), fontSize: 24, fontWeight: FontWeight.bold)
@@ -97,18 +94,6 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
                 onPressed: () {},
               ),
             ],
-            // Regular flexible space for storage widget, appears on scroll to top
-            flexibleSpace: FlexibleSpaceBar(
-              background: SafeArea(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    _buildStorageStatus(),
-                    const SizedBox(height: 10),
-                  ],
-                ),
-              ),
-            ),
           ),
           
           // Sticky Filter Chips Below App Bar
@@ -168,22 +153,38 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             sliver: _isLoading 
               ? const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator())))
-              : _downloadedFiles.isEmpty
-                ? const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(40), child: Text("No downloaded files found", style: TextStyle(color: Colors.black38)))))
-                : SliverList(
+              : Builder(
+                  builder: (context) {
+                    final filteredFiles = _downloadedFiles.where((f) {
+                      if (_selectedFilter == 'All') return true;
+                      String ext = f.path.split('.').last.toLowerCase();
+                      if (_selectedFilter == 'Documents') return ['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx'].contains(ext);
+                      if (_selectedFilter == 'Videos') return ['mp4', 'avi', 'mov'].contains(ext);
+                      if (_selectedFilter == 'Images') return ['jpg', 'jpeg', 'png', 'gif'].contains(ext);
+                      return false;
+                    }).toList();
+
+                    if (filteredFiles.isEmpty) {
+                      return const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(40), child: Text("No downloaded files found", style: TextStyle(color: Colors.black38)))));
+                    }
+
+                    return SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        final file = _downloadedFiles[index] as File;
+                        final file = filteredFiles[index] as File;
                         final name = file.path.split(Platform.pathSeparator).last;
                         return _buildDownloadFileTile(
                           name, 
                           _formatBytes(file.lengthSync()), 
-                          "Local Device"
+                          "Local Device",
+                          file.path,
                         );
                       },
-                      childCount: _downloadedFiles.length,
+                      childCount: filteredFiles.length,
                     ),
-                  ),
+                  );
+                },
+              ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
@@ -258,62 +259,59 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
     );
   }
 
-  Widget _buildDownloadFileTile(String name, String size, String author) {
+  Widget _buildDownloadFileTile(String name, String size, String author, String path) {
     IconData icon = _getIconForFile(name);
     Color iconColor = _getColorForFile(name);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
+      child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          )
-        ]
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: iconColor, size: 24),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87), overflow: TextOverflow.ellipsis),
-                const SizedBox(height: 4),
-                Row(
+        onTap: () async {
+          try {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Opening file...")));
+            final api = ApiService();
+            await api.downloadAndOpenFile(path, context: context, fileName: name);
+          } catch (e) {
+            if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+          }
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(size, style: const TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
-                    const SizedBox(width: 8),
-                    const Text("•", style: TextStyle(color: Colors.black38, fontSize: 12)),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(author, style: const TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
+                    Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87), overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Text(size, style: const TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.bold)),
+                        const SizedBox(width: 8),
+                        const Text("•", style: TextStyle(color: Colors.black38, fontSize: 12)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(author, style: const TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.w500), overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          IconButton(
-            icon: const Icon(Icons.more_vert_rounded, color: Colors.black38),
-            onPressed: () {},
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          )
-        ],
+        ),
       ),
     );
   }
@@ -367,27 +365,6 @@ class _FilterHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
     return true;
-  }
-}
-
-// Custom ScrollPhysics to reduce the overscroll stretch dramatically
-class _LessStretchyScrollPhysics extends BouncingScrollPhysics {
-  const _LessStretchyScrollPhysics({ScrollPhysics? parent}) : super(parent: parent);
-
-  @override
-  _LessStretchyScrollPhysics applyTo(ScrollPhysics? ancestor) {
-    return _LessStretchyScrollPhysics(parent: buildParent(ancestor));
-  }
-
-  @override
-  double applyPhysicsToUserOffset(ScrollMetrics position, double offset) {
-    // Add significant drag resistance when revealing the 190.0 top storage region
-    // so it requires a purposeful downward drag and doesn't reveal easily on normal scroll.
-    final bool isOverscrollingTop = position.pixels <= 190.0 && offset > 0.0;
-    if (isOverscrollingTop) {
-      return super.applyPhysicsToUserOffset(position, offset) * 0.20;
-    }
-    return super.applyPhysicsToUserOffset(position, offset);
   }
 }
 

@@ -407,7 +407,9 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             child: FutureBuilder<bool>(
               future: material['file_path'] != null ? _apiService.isFileDownloaded(material['file_path']) : Future.value(false),
               builder: (context, snapshot) {
-                IconData defaultIcon = Icons.description_rounded;
+                String fileName = (material['file_path'] ?? material['title'] ?? '').toString().toLowerCase();
+                IconData defaultIcon = _getIconForFile(fileName);
+                
                 if (snapshot.connectionState == ConnectionState.done && snapshot.data == false && !_isInstructor) {
                   defaultIcon = Icons.download_rounded;
                 }
@@ -595,5 +597,16 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         );
       },
     );
+  }
+
+  IconData _getIconForFile(String filename) {
+    if (filename.endsWith('.pdf')) return Icons.picture_as_pdf_rounded;
+    if (filename.endsWith('.doc') || filename.endsWith('.docx')) return Icons.description_rounded;
+    if (filename.endsWith('.xls') || filename.endsWith('.xlsx')) return Icons.table_chart_rounded;
+    if (filename.endsWith('.ppt') || filename.endsWith('.pptx')) return Icons.slideshow_rounded;
+    if (filename.endsWith('.jpg') || filename.endsWith('.jpeg') || filename.endsWith('.png')) return Icons.image_rounded;
+    if (filename.endsWith('.mp4') || filename.endsWith('.mov')) return Icons.video_collection_rounded;
+    if (filename.endsWith('.zip') || filename.endsWith('.rar')) return Icons.folder_zip_rounded;
+    return Icons.description_rounded;
   }
 }

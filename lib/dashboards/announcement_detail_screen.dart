@@ -554,10 +554,17 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
             color: const Color(0xFF09AEF5).withOpacity(0.05),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            _getIconForType(type),
-            color: const Color(0xFF09AEF5),
-            size: 26,
+          child: FutureBuilder<bool>(
+            future: path.isNotEmpty ? _apiService.isFileDownloaded(path) : Future.value(false),
+            builder: (context, snapshot) {
+              IconData currentIcon = _getIconForType(type);
+              Color currentColor = const Color(0xFF09AEF5);
+              if (snapshot.connectionState == ConnectionState.done && snapshot.data == false) {
+                currentIcon = Icons.download_rounded;
+                currentColor = Colors.grey;
+              }
+              return Icon(currentIcon, color: currentColor, size: 26);
+            }
           ),
         ),
         title: Text(
