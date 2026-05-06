@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'system_messages_screen.dart';
 import 'student_menu_screen.dart';
 import 'student_courses_screen.dart';
+import '../services/api_service.dart';
 
 
 class StudentHomeScreen extends StatefulWidget {
@@ -15,11 +16,15 @@ class StudentHomeScreen extends StatefulWidget {
 class _StudentHomeScreenState extends State<StudentHomeScreen> {
   String _title = '';
   String _firstName = 'Student';
+  final ApiService _apiService = ApiService();
+  bool _isScheduleLoading = true;
+  List<Map<String, dynamic>> _todaySchedule = [];
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _fetchTodaySchedule();
   }
 
   Future<void> _loadUserData() async {
@@ -29,6 +34,93 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       if (_title == 'None') _title = '';
       _firstName = prefs.getString('first_name') ?? 'Student';
     });
+  }
+
+  Future<void> _fetchTodaySchedule() async {
+    if (!mounted) return;
+    setState(() => _isScheduleLoading = true);
+    try {
+      final courses = await _apiService.getStudentCourses();
+      final schedules = await _apiService.getMySchedules();
+
+      _processTodaySchedule(courses, schedules);
+    } catch (e) {
+      debugPrint("Error fetching schedule: $e");
+    } finally {
+      if (mounted) setState(() => _isScheduleLoading = false);
+    }
+  }
+
+  void _processTodaySchedule(List<dynamic> courses, List<dynamic> schedules) {
+    // Collect all course titles and codes that the student is enrolled in
+    final Set<String> myCourseIdentifiers = {};
+    for (var course in courses) {
+      if (course['title'] != null) myCourseIdentifiers.add(course['title'].toString().toLowerCase());
+      if (course['course_code'] != null) myCourseIdentifiers.add(course['course_code'].toString().toLowerCase());
+    }
+
+    final int todayIdx = DateTime.now().weekday - 1; // 0 = Monday, ..., 6 = Sunday
+    
+    List<Map<String, dynamic>> todayClasses = [];
+    
+    final slotTimes = [
+      "08:00 AM - 09:45 AM",
+      "09:50 AM - 12:20 PM",
+      "01:35 PM - 03:20 PM",
+      "03:25 PM - 06:05 PM"
+    ];
+    final List<Color> colors = [Colors.purple, Colors.green, Colors.orange, Colors.blue, Colors.red, Colors.teal];
+
+    for (var schedule in schedules) {
+      if (schedule['file_path'] == 'DIGITAL_ENTRY') {
+        final content = schedule['content'] as Map<String, dynamic>?;
+        if (content != null) {
+          content.forEach((key, value) {
+            // Key format is "slotIdx-dayIdx"
+            final parts = key.split('-');
+            if (parts.length == 2) {
+              try {
+                int slotIdx = int.parse(parts[0]);
+                int dayIdx = int.parse(parts[1]);
+                
+                String courseName = value.toString().trim();
+                String courseTitleOnly = courseName.split('|')[0].split('-')[0].trim().toLowerCase();
+                
+                bool isMyCourse = myCourseIdentifiers.contains(courseName.toLowerCase()) || 
+                                 myCourseIdentifiers.contains(courseTitleOnly);
+                
+                // Final fallback: check if any of our identifiers is a substring of the schedule entry
+                if (!isMyCourse) {
+                  isMyCourse = myCourseIdentifiers.any((id) => 
+                    id.length > 3 && (courseName.toLowerCase().contains(id) || id.contains(courseName.toLowerCase()))
+                  );
+                }
+
+                if (dayIdx == todayIdx && isMyCourse) {
+                  todayClasses.add({
+                    'course': courseName,
+                    'time': slotTimes[slotIdx % slotTimes.length],
+                    'slotIdx': slotIdx,
+                    'color': colors[todayClasses.length % colors.length]
+                  });
+                }
+              } catch (e) {
+                // Ignore parse errors for malformed keys
+              }
+            }
+          });
+        }
+      }
+    }
+
+    // Sort by time (slotIdx)
+    todayClasses.sort((a, b) => a['slotIdx'].compareTo(b['slotIdx']));
+
+    if (mounted) {
+      setState(() {
+        _todaySchedule = todayClasses;
+      });
+    }
   }
 
   @override
@@ -62,8 +154,17 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                         const SizedBox(height: 30),
                         const Text("Today's Schedule", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
                         const SizedBox(height: 15),
-                        _buildScheduleTask("Compiler (Lab)", "Room 302 • 10:00 AM", Colors.purple),
-                        _buildScheduleTask("Data Structures (Lecture)", "Room 105 • 01:00 PM", Colors.green),
+                        if (_isScheduleLoading)
+                          const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(20.0),
+                              child: CircularProgressIndicator(strokeWidth: 3),
+                            ),
+                          )
+                        else if (_todaySchedule.isEmpty)
+                          _buildEmptySchedule()
+                        else
+                          ..._todaySchedule.map((s) => _buildScheduleTask(s['course'], s['time'], s['color'])),
 
                         const SizedBox(height: 30),
                         const Text("Pending Tasks", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
@@ -413,6 +514,30 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildEmptySchedule() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(25),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.event_available_rounded, size: 40, color: Colors.grey.shade300),
+          const SizedBox(height: 12),
+          Text(
+            DateTime.now().weekday > 5 ? "Happy Weekend! No classes today." : "No classes scheduled for today.",
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+        ],
       ),
     );
   }

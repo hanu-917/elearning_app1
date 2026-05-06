@@ -55,23 +55,35 @@ class _InstructorScheduleScreenState extends State<InstructorScheduleScreen> {
         final content = schedule['content'] as Map<String, dynamic>?;
         if (content != null) {
           content.forEach((key, value) {
-            if (myCourseTitles.contains(value.toString().toLowerCase())) {
-              final parts = key.split('-');
-              if (parts.length == 2) {
-                int slotIdx = int.parse(parts[0]);
-                int dayIdx = int.parse(parts[1]);
+                String courseName = value.toString().trim();
+                String courseTitleOnly = courseName.split('|')[0].split('-')[0].trim().toLowerCase();
                 
-                extractedClasses.add({
-                  'day': dayNames[dayIdx],
-                  'dayIdx': dayIdx,
-                  'slotIdx': slotIdx,
-                  'course': value,
-                  'time': slotTimes[slotIdx % slotTimes.length],
-                  'location': "See Digital Schedule", // Location not explicitly in slot yet
-                  'color': colors[extractedClasses.length % colors.length]
-                });
-              }
-            }
+                bool isMyCourse = myCourseTitles.contains(courseName.toLowerCase()) || 
+                                 myCourseTitles.contains(courseTitleOnly);
+                
+                if (!isMyCourse) {
+                  isMyCourse = myCourseTitles.any((id) => 
+                    id.length > 3 && (courseName.toLowerCase().contains(id) || id.contains(courseName.toLowerCase()))
+                  );
+                }
+
+                if (isMyCourse) {
+                  final parts = key.split('-');
+                  if (parts.length == 2) {
+                    int slotIdx = int.parse(parts[0]);
+                    int dayIdx = int.parse(parts[1]);
+                    
+                    extractedClasses.add({
+                      'day': dayNames[dayIdx],
+                      'dayIdx': dayIdx,
+                      'slotIdx': slotIdx,
+                      'course': courseName,
+                      'time': slotTimes[slotIdx % slotTimes.length],
+                      'location': "See Digital Schedule", 
+                      'color': colors[extractedClasses.length % colors.length]
+                    });
+                  }
+                }
           });
         }
       } else {
