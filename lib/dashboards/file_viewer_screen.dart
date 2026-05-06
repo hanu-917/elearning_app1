@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:microsoft_viewer/microsoft_viewer.dart';
 
 class FileViewerScreen extends StatefulWidget {
@@ -16,11 +17,24 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
   String? textContent;
   List<int>? fileBytes;
   bool isLoading = true;
+  bool isLandscape = false;
 
   @override
   void initState() {
     super.initState();
     _loadFile();
+  }
+
+  @override
+  void dispose() {
+    // Reset orientation to system default when leaving the viewer
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    super.dispose();
   }
 
   Future<void> _loadFile() async {
@@ -44,22 +58,55 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
     }
   }
 
+  void _toggleOrientation() {
+    setState(() {
+      isLandscape = !isLandscape;
+      if (isLandscape) {
+        SystemChrome.setPreferredOrientations([
+          DeviceOrientation.landscapeLeft,
+          DeviceOrientation.landscapeRight,
+        ]);
+      } else {
+        SystemChrome.setPreferredOrientations([
+          DeviceOrientation.portraitUp,
+        ]);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final ext = widget.fileName.split('.').last.toLowerCase();
     final isMicrosoftSupported = ['docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls'].contains(ext);
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.fileName)),
+      appBar: AppBar(
+        title: Text(widget.fileName),
+        actions: [
+          IconButton(
+            icon: Icon(isLandscape ? Icons.screen_lock_portrait_rounded : Icons.screen_lock_landscape_rounded),
+            onPressed: _toggleOrientation,
+            tooltip: isLandscape ? "Switch to Portrait" : "Switch to Landscape",
+          ),
+        ],
+      ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : textContent != null
-              ? SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(textContent!),
+              ? SizedBox.expand(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.all(20.0),
+                    child: Text(
+                      textContent!,
+                      style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.black87),
+                    ),
+                  ),
                 )
               : (fileBytes != null && isMicrosoftSupported)
-                  ? MicrosoftViewer(fileBytes!)
+                  ? SizedBox.expand(
+                      child: MicrosoftViewer(fileBytes!),
+                    )
                   : const Center(child: Text("Unsupported file format for internal viewer.")),
     );
   }
