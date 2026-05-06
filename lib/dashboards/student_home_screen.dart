@@ -6,6 +6,8 @@ import 'student_menu_screen.dart';
 import 'student_courses_screen.dart';
 import 'chat_detail_screen.dart';
 import 'student_assignments_screen.dart';
+import 'student_materials_screen.dart';
+import 'student_schedule_screen.dart';
 import '../services/api_service.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -456,15 +458,13 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       crossAxisSpacing: 10,
       children: [
         _buildIconBtn(Icons.folder_shared_rounded, "Materials", const Color(0xFFFFF3E0), Colors.orange, onTap: () {
-          // Future: Navigate to StudentMaterials
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Materials section coming soon!")));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentMaterialsScreen()));
         }),
         _buildIconBtn(Icons.assignment_rounded, "Tasks", const Color(0xFFE3F2FD), Colors.blue, onTap: () {
           Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentAssignmentsScreen()));
         }),
-        _buildIconBtn(Icons.groups_rounded, "Groups", const Color(0xFFE0F7FA), Colors.cyan, onTap: () {
-          // Future: Navigate to StudentGroups
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Groups section coming soon!")));
+        _buildIconBtn(Icons.schedule_rounded, "Schedule", const Color(0xFFF3E5F5), Colors.purple, onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentScheduleScreen()));
         }),
         _buildIconBtn(Icons.more_horiz_rounded, "More", Colors.grey.shade200, Colors.grey.shade700, onTap: () {
           Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentMenuScreen()));

@@ -429,6 +429,31 @@ class ApiService {
     }
   }
 
+  Future<List<dynamic>> getMyGroups() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/groups/student/my-groups'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'] ?? [];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load your groups');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
   // === Assessment Methods ===
 
   Future<List<dynamic>> getAssessments(String courseId) async {

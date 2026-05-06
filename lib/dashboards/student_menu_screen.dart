@@ -6,6 +6,11 @@ import 'help_support_screen.dart';
 import 'account_settings_screen.dart';
 import 'system_messages_screen.dart';
 import 'academic_calendar_screen.dart';
+import 'student_schedule_screen.dart';
+import 'student_all_courses_screen.dart';
+import 'student_grades_screen.dart';
+import 'student_groups_screen.dart';
+import '../services/api_service.dart';
 
 class StudentMenuScreen extends StatefulWidget {
   const StudentMenuScreen({super.key});
@@ -15,6 +20,24 @@ class StudentMenuScreen extends StatefulWidget {
 }
 
 class _StudentMenuScreenState extends State<StudentMenuScreen> {
+  final ApiService _apiService = ApiService();
+  bool _isLoading = false;
+
+  Future<void> _fetchAndNavigateToAllCourses() async {
+    setState(() => _isLoading = true);
+    try {
+      final courses = await _apiService.getStudentCourses();
+      if (mounted) {
+        setState(() => _isLoading = false);
+        Navigator.push(context, MaterialPageRoute(builder: (context) => StudentAllCoursesScreen(courses: courses)));
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      }
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -28,12 +51,14 @@ class _StudentMenuScreenState extends State<StudentMenuScreen> {
         ),
         title: const Text("All Services", style: TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold)),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(25),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(
+            padding: const EdgeInsets.all(25),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("LMS Services", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
+            const SizedBox(height: 10),
             const SizedBox(height: 20),
             GridView.count(
               shrinkWrap: true,
@@ -49,16 +74,16 @@ class _StudentMenuScreenState extends State<StudentMenuScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Tasks section coming soon!")));
                 }),
                 _buildMenuIcon(Icons.book_rounded, "Courses", const Color(0xFFE8F5E9), Colors.green, () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentCoursesScreen()));
+                  _fetchAndNavigateToAllCourses();
                 }),
                 _buildMenuIcon(Icons.schedule_rounded, "Schedule", const Color(0xFFF3E5F5), Colors.purple, () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Schedule section coming soon!")));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentScheduleScreen()));
                 }),
                 _buildMenuIcon(Icons.grade_rounded, "Grades", const Color(0xFFFFEBEE), Colors.red, () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Grades section coming soon!")));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentGradesScreen()));
                 }),
                 _buildMenuIcon(Icons.groups_rounded, "Groups", const Color(0xFFE0F7FA), Colors.cyan, () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Groups section coming soon!")));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentGroupsScreen()));
                 }),
                 _buildMenuIcon(Icons.calendar_month_rounded, "Calendar", const Color(0xFFFFFDE7), Colors.amber, () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const AcademicCalendarScreen()));
@@ -72,24 +97,8 @@ class _StudentMenuScreenState extends State<StudentMenuScreen> {
                 _buildMenuIcon(Icons.analytics_rounded, "Analytics", const Color(0xFFE8EAF6), Colors.indigo, () {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Analytics coming soon!")));
                 }),
-                _buildMenuIcon(Icons.notifications_active_rounded, "Messages", const Color(0xFFF1F8E9), Colors.lightGreen, () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const SystemMessagesScreen()));
-                }),
-                _buildMenuIcon(Icons.info_outline_rounded, "About", const Color(0xFFECEFF1), Colors.blueGrey, () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("BDU ELMS v1.0.0")));
-                }),
               ],
             ),
-            
-            const SizedBox(height: 40),
-            const Text("Account & Support", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
-            const SizedBox(height: 20),
-            _buildListAction(Icons.help_outline_rounded, "Help & Support", "Get assistance and tutorials", () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
-            }),
-            _buildListAction(Icons.settings_outlined, "Account Settings", "Manage your profile and security", () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const AccountSettingsScreen()));
-            }),
           ],
         ),
       ),
