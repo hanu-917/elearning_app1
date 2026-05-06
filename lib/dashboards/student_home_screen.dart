@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'system_messages_screen.dart';
+import 'student_menu_screen.dart';
+import 'student_courses_screen.dart';
 
 
 class StudentHomeScreen extends StatefulWidget {
@@ -104,7 +106,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Hi, ${_title.isNotEmpty ? '$_title ' : ''}$_firstName".trim(), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5)),
+                Text("Hi, ${_title.isNotEmpty ? '$_title ' : ''}$_firstName".trim(), 
+                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
                 const SizedBox(height: 4),
                 const Text("Let's start learning!", style: TextStyle(color: Colors.white70, fontSize: 14)),
               ],
@@ -161,13 +167,21 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text("Ch 3: Firewalls", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 8),
-                    Text("Computer Security", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text("Ch 3: Firewalls", 
+                        style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 8),
+                      Text("Computer Security", 
+                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
                 SizedBox(
                   height: 60,
@@ -219,55 +233,68 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 5,
+      crossAxisCount: 4,
       mainAxisSpacing: 25,
-      crossAxisSpacing: 5,
+      crossAxisSpacing: 10,
       children: [
-        _buildIconBtn(Icons.folder_shared_rounded, "Materials", const Color(0xFFFFF3E0), Colors.orange),
-        _buildIconBtn(Icons.schedule_rounded, "Schedule", const Color(0xFFF3E5F5), Colors.purple),
-        _buildIconBtn(Icons.groups_rounded, "Groups", const Color(0xFFE0F7FA), Colors.cyan),
-        _buildIconBtn(Icons.grade_rounded, "Grades", const Color(0xFFFFEBEE), Colors.red),
-        _buildIconBtn(Icons.more_horiz_rounded, "More", Colors.grey.shade200, Colors.grey.shade700),
+        _buildIconBtn(Icons.folder_shared_rounded, "Materials", const Color(0xFFFFF3E0), Colors.orange, onTap: () {
+          // Future: Navigate to StudentMaterials
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Materials section coming soon!")));
+        }),
+        _buildIconBtn(Icons.assignment_rounded, "Tasks", const Color(0xFFE3F2FD), Colors.blue, onTap: () {
+           // Future: Navigate to All Tasks
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("All tasks section coming soon!")));
+        }),
+        _buildIconBtn(Icons.groups_rounded, "Groups", const Color(0xFFE0F7FA), Colors.cyan, onTap: () {
+          // Future: Navigate to StudentGroups
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Groups section coming soon!")));
+        }),
+        _buildIconBtn(Icons.more_horiz_rounded, "More", Colors.grey.shade200, Colors.grey.shade700, onTap: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentMenuScreen()));
+        }),
       ],
     );
   }
 
-  Widget _buildIconBtn(IconData icon, String label, Color bgColor, Color iconColor) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          height: 55,
-          width: 55,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04), 
-                blurRadius: 10,
-                offset: const Offset(0, 4)
-              )
-            ]
-          ),
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: bgColor,
-                shape: BoxShape.circle,
+  Widget _buildIconBtn(IconData icon, String label, Color bgColor, Color iconColor, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            height: 55,
+            width: 55,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04), 
+                  blurRadius: 10,
+                  offset: const Offset(0, 4)
+                )
+              ]
+            ),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: iconColor, size: 22),
               ),
-              child: Icon(icon, color: iconColor, size: 22),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label, 
-          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.black87),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            label, 
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.black87),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     );
   }
 
