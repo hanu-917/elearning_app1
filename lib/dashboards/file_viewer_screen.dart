@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:microsoft_viewer/microsoft_viewer.dart';
+import '../widgets/custom_microsoft_viewer.dart';
 
 class FileViewerScreen extends StatefulWidget {
   final String filePath;
@@ -105,7 +105,7 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
                 )
               : (fileBytes != null && isMicrosoftSupported)
                   ? SizedBox.expand(
-                      child: MicrosoftViewer(fileBytes!),
+                      child: CustomMicrosoftViewer(fileBytes!),
                     )
                   : const Center(child: Text("Unsupported file format for internal viewer.")),
     );
