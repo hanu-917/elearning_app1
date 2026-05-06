@@ -18,9 +18,24 @@ import 'package:microsoft_viewer/models/slide.dart';
 
 /// Class for processing .pptx files (Custom to remove horizontal scroll)
 class CustomPresentationProcessor {
+  static final Map<int, Size> _slideSizes = {};
+
   void getPresentationDetails(ArchiveFile presentationFile, Presentation presentation) {
     final fileContent = utf8.decode(presentationFile.content);
     final presentationDoc = xml.XmlDocument.parse(fileContent);
+
+    // Extract slide size
+    var sldSz = presentationDoc.findAllElements("p:sldSz").firstOrNull;
+    if (sldSz != null) {
+      var cx = sldSz.getAttribute("cx");
+      var cy = sldSz.getAttribute("cy");
+      if (cx != null && cy != null) {
+        // Convert EMU to points (1 point = 12700 EMU)
+        double w = double.parse(cx) / 12700;
+        double h = double.parse(cy) / 12700;
+        _slideSizes[presentation.hashCode] = Size(w, h);
+      }
+    }
     var slidesRoot = presentationDoc.findAllElements("p:sldIdLst");
     if (slidesRoot.isNotEmpty) {
       var slides = slidesRoot.first.findAllElements("p:sldId");
@@ -114,120 +129,158 @@ class CustomPresentationProcessor {
     for (int i = 0; i < presentation.slides.length; i++) {
       var slideRelation = relationShips.firstWhereOrNull((rel) => rel.id == presentation.slides[i].rId);
       if (slideRelation != null) {
-        var slideFile = archive.singleWhere((archiveFile) => archiveFile.name.endsWith(slideRelation.target));
-        if (slideFile.isFile) {
+        var slideFile = archive.singleWhereOrNull((archiveFile) => archiveFile.name.endsWith(slideRelation.target));
+        if (slideFile != null && slideFile.isFile) {
           final fileContent = utf8.decode(slideFile.content);
           final slideDoc = xml.XmlDocument.parse(fileContent);
           presentation.slides[i].fileName = slideFile.name.split("/").last;
-          var spElement = slideDoc.findAllElements("p:sp");
-          if (spElement.isNotEmpty) {
-            for (int j = 0; j < spElement.length; j++) {
-              Offset offset = const Offset(0, 0);
-              Size size = const Size(0, 0);
-              double offsetY = 0;
-              double offsetX = 0;
-              if (spElement.elementAt(j).parentElement != null && spElement.elementAt(j).parentElement?.name.toString() == "p:grpSp") {
-                var grpSpPr = spElement.elementAt(j).parentElement?.findAllElements("p:grpSpPr");
-                if (grpSpPr != null && grpSpPr.isNotEmpty) {
-                  var chckOff = grpSpPr.first.findAllElements("a:off");
-                  if (chckOff.isNotEmpty) {
-                    var offX = chckOff.first.getAttribute("x");
-                    if (offX != null) offsetX = double.parse(offX);
-                    var offY = chckOff.first.getAttribute("y");
-                    if (offY != null) offsetY = double.parse(offY);
-                  }
-                }
-              }
-              var xfrmElement = spElement.elementAt(j).findAllElements("a:xfrm");
-              if (xfrmElement.isNotEmpty) {
-                var chkOff = xfrmElement.first.findAllElements("a:off");
-                if (chkOff.isNotEmpty) {
-                  var offX = chkOff.first.getAttribute("x");
-                  var offY = chkOff.first.getAttribute("y");
-                  if (offX != null && offY != null) offset = Offset(double.parse(offX) + offsetX, double.parse(offY) + offsetY);
-                }
-                var chkExt = xfrmElement.first.findAllElements("a:ext");
-                if (chkExt.isNotEmpty) {
-                  var extX = chkExt.first.getAttribute("cx");
-                  var extY = chkExt.first.getAttribute("cy");
-                  if (extX != null && extY != null) size = Size(double.parse(extX), double.parse(extY));
-                }
-              }
-              List<PresentationParagraph> presentationParagraphs = [];
-              spElement.elementAt(j).findAllElements("p:txBody").forEach((txt) {
-                var chkPara = txt.findAllElements("a:p");
-                if (chkPara.isNotEmpty) {
-                  for (var para in chkPara) {
-                    List<PresentationText> presentationTexts = [];
-                    var chkR = para.findAllElements("a:r");
-                    if (chkR.isNotEmpty) {
-                      for (var r in chkR) {
-                        double fontSize = 20;
-                        var rPr = r.findAllElements("a:rPr");
-                        if (rPr.isNotEmpty) {
-                          var tempSize = rPr.first.getAttribute("sz");
-                          if (tempSize != null) fontSize = double.parse(tempSize) / 150;
-                        }
-                        var text = "";
-                        r.findAllElements("a:t").forEach((txt2) => text += txt2.innerText);
-                        if (text.isNotEmpty) presentationTexts.add(PresentationText(text, fontSize));
-                      }
-                    }
-                    if (presentationTexts.isNotEmpty) {
-                      PresentationParagraph paragraph = PresentationParagraph();
-                      paragraph.textSpans = presentationTexts;
-                      presentationParagraphs.add(paragraph);
-                    }
-                  }
-                }
-              });
-              if (presentationParagraphs.isNotEmpty) {
-                PresentationTextBox presentationTextBox = PresentationTextBox(offset, size);
-                presentationTextBox.presentationParas = presentationParagraphs;
-                presentation.slides[i].presentationTextBoxes.add(presentationTextBox);
+
+          // Parse Slide Relationships for local slide (needed for images)
+          List<Relationship> slideLevelRelations = [];
+          var checkSlideRel = archive.singleWhereOrNull((archiveFile) => archiveFile.name.endsWith("${presentation.slides[i].fileName}.rels"));
+          if (checkSlideRel != null) {
+            final fileContentRel = utf8.decode(checkSlideRel.content);
+            final documentRel = xml.XmlDocument.parse(fileContentRel);
+            for (var rel in documentRel.findAllElements("Relationship")) {
+              if (rel.getAttribute("Id") != null && rel.getAttribute("Target") != null) {
+                slideLevelRelations.add(Relationship(rel.getAttribute("Id")!, rel.getAttribute("Target")!));
               }
             }
           }
 
-          var checkSlideRel = archive.singleWhereOrNull((archiveFile) => archiveFile.name.endsWith("${presentation.slides[i].fileName}.rels"));
-          if (checkSlideRel != null) {
-            List<Relationship> slideLevelRelations = [];
-            final fileContentRel = utf8.decode(checkSlideRel.content);
-            String drawingTarget = "";
-            String layoutTarget = "";
-            final documentRel = xml.XmlDocument.parse(fileContentRel);
-            final relationshipsElement = documentRel.findAllElements("Relationship");
-            for (var rel in relationshipsElement) {
-              if (rel.getAttribute("Id") != null) slideLevelRelations.add(Relationship(rel.getAttribute("Id").toString(), rel.getAttribute("Target").toString()));
-              if (rel.getAttribute("Type") != null && rel.getAttribute("Type")!.endsWith("relationships/diagramDrawing")) drawingTarget = rel.getAttribute("Target").toString().replaceAll("../", "");
-              if (rel.getAttribute("Type") != null && rel.getAttribute("Type")!.endsWith("relationships/slideLayout")) layoutTarget = rel.getAttribute("Target").toString().replaceAll("../", "");
-            }
-            if (drawingTarget.isNotEmpty) {
-              var diagramFile = archive.singleWhereOrNull((archiveFile) => archiveFile.name.endsWith(drawingTarget));
-              if (diagramFile != null) getAllShapes(diagramFile, presentation.slides[i]);
-            }
-            if (layoutTarget.isNotEmpty) {
-              var checkLayoutRel = archive.singleWhereOrNull((archiveFile) => archiveFile.name.endsWith("${layoutTarget.split("/").last}.rels"));
-              List<Relationship> layoutRelations = [];
-              if (checkLayoutRel != null) {
-                final fileContentL = utf8.decode(checkLayoutRel.content);
-                final documentL = xml.XmlDocument.parse(fileContentL);
-                for (var rel in documentL.findAllElements("Relationship")) {
-                  if (rel.getAttribute("Id") != null) layoutRelations.add(Relationship(rel.getAttribute("Id").toString(), rel.getAttribute("Target").toString()));
+          // Combined processing for p:sp (shapes) and p:pic (images)
+          var allElements = slideDoc.descendants.whereType<xml.XmlElement>().where((e) => e.name.local == "sp" || e.name.local == "pic");
+
+          for (var element in allElements) {
+            double offsetX = 0;
+            double offsetY = 0;
+            double scaleX = 1.0;
+            double scaleY = 1.0;
+            double chOffX = 0;
+            double chOffY = 0;
+
+            // Handle grouping transformations
+            var parentGrp = element.ancestors.whereType<xml.XmlElement>().firstWhereOrNull((e) => e.name.local == "grpSp");
+            if (parentGrp != null) {
+              var grpSpPr = parentGrp.findAllElements("p:grpSpPr").firstOrNull;
+              if (grpSpPr != null) {
+                var xfrm = grpSpPr.findAllElements("a:xfrm").firstOrNull;
+                if (xfrm != null) {
+                  var off = xfrm.findAllElements("a:off").firstOrNull;
+                  var ext = xfrm.findAllElements("a:ext").firstOrNull;
+                  var chOff = xfrm.findAllElements("a:chOff").firstOrNull;
+                  var chExt = xfrm.findAllElements("a:chExt").firstOrNull;
+
+                  if (off != null) {
+                    offsetX = double.tryParse(off.getAttribute("x") ?? "0") ?? 0;
+                    offsetY = double.tryParse(off.getAttribute("y") ?? "0") ?? 0;
+                  }
+                  if (chOff != null) {
+                    chOffX = double.tryParse(chOff.getAttribute("x") ?? "0") ?? 0;
+                    chOffY = double.tryParse(chOff.getAttribute("y") ?? "0") ?? 0;
+                  }
+                  if (ext != null && chExt != null) {
+                    double ex = double.tryParse(ext.getAttribute("cx") ?? "1") ?? 1;
+                    double ey = double.tryParse(ext.getAttribute("cy") ?? "1") ?? 1;
+                    double cex = double.tryParse(chExt.getAttribute("cx") ?? "1") ?? 1;
+                    double cey = double.tryParse(chExt.getAttribute("cy") ?? "1") ?? 1;
+                    scaleX = ex / cex;
+                    scaleY = ey / cey;
+                  }
                 }
               }
-              var layoutFile = archive.singleWhereOrNull((archiveFile) => archiveFile.name.endsWith(layoutTarget));
-              if (layoutFile != null) {
-                final fileContentLF = utf8.decode(layoutFile.content);
-                final documentLF = xml.XmlDocument.parse(fileContentLF);
-                var chkBg = documentLF.findAllElements("p:bg");
-                if (chkBg.isNotEmpty) {
-                  var chkBlip = chkBg.first.findAllElements("a:blip");
-                  if (chkBlip.isNotEmpty) {
-                    var chkEmbed = chkBlip.first.getAttribute("r:embed");
-                    if (chkEmbed != null) {
-                      var layoutRelTarget = layoutRelations.firstWhereOrNull((rel) => rel.id == chkEmbed);
-                      if (layoutRelTarget != null) presentation.slides[i].backgroundImagePath = "$presentationOutputDirectory/${layoutRelTarget.target.split("/").last}";
+            }
+
+            Offset offset = const Offset(0, 0);
+            Size size = const Size(0, 0);
+            var xfrmElement = element.findAllElements("a:xfrm").firstOrNull;
+            if (xfrmElement != null) {
+              var chkOff = xfrmElement.findAllElements("a:off").firstOrNull;
+              if (chkOff != null) {
+                var offX = double.tryParse(chkOff.getAttribute("x") ?? "0") ?? 0;
+                var offY = double.tryParse(chkOff.getAttribute("y") ?? "0") ?? 0;
+                offset = Offset(offsetX + (offX - chOffX) * scaleX, offsetY + (offY - chOffY) * scaleY);
+              }
+              var chkExt = xfrmElement.findAllElements("a:ext").firstOrNull;
+              if (chkExt != null) {
+                var extX = double.tryParse(chkExt.getAttribute("cx") ?? "0") ?? 0;
+                var extY = double.tryParse(chkExt.getAttribute("cy") ?? "0") ?? 0;
+                size = Size(extX * scaleX, extY * scaleY);
+              }
+            }
+
+            if (element.name.local == "sp") {
+              // Text processing
+              List<PresentationParagraph> presentationParagraphs = [];
+              element.findAllElements("p:txBody").forEach((txt) {
+                txt.findAllElements("a:p").forEach((para) {
+                  List<PresentationText> presentationTexts = [];
+                  para.findAllElements("a:r").forEach((r) {
+                    double fontSize = 18;
+                    var rPr = r.findAllElements("a:rPr").firstOrNull;
+                    if (rPr != null) {
+                      var sz = rPr.getAttribute("sz");
+                      if (sz != null) fontSize = double.parse(sz) / 100;
+                    }
+                    var text = "";
+                    r.findAllElements("a:t").forEach((t) => text += t.innerText);
+                    if (text.isNotEmpty) presentationTexts.add(PresentationText(text, fontSize));
+                  });
+                  if (presentationTexts.isNotEmpty) {
+                    PresentationParagraph paragraph = PresentationParagraph();
+                    paragraph.textSpans = presentationTexts;
+                    presentationParagraphs.add(paragraph);
+                  }
+                });
+              });
+
+              if (presentationParagraphs.isNotEmpty) {
+                PresentationTextBox presentationTextBox = PresentationTextBox(offset, size);
+                presentationTextBox.presentationParas = presentationParagraphs;
+                presentation.slides[i].presentationTextBoxes.add(presentationTextBox);
+              } else {
+                // Shape without text
+                presentation.slides[i].presentationShapes.add(PresentationShape("shape", "", offset, size));
+              }
+            } else if (element.name.local == "pic") {
+              // Image processing
+              var blip = element.findAllElements("a:blip").firstOrNull;
+              var embed = blip?.getAttribute("r:embed");
+              if (embed != null) {
+                var rel = slideLevelRelations.firstWhereOrNull((r) => r.id == embed);
+                if (rel != null) {
+                  String imgName = rel.target.split("/").last;
+                  String imgPath = "$presentationOutputDirectory/$imgName";
+                  presentation.slides[i].presentationShapes.add(PresentationShape("image", "IMG|$imgPath", offset, size));
+                }
+              }
+            }
+          }
+
+          // Handle Diagrams/Backgrounds as before but cleaner
+          if (checkSlideRel != null) {
+            final documentRel = xml.XmlDocument.parse(utf8.decode(checkSlideRel.content));
+            for (var rel in documentRel.findAllElements("Relationship")) {
+              var type = rel.getAttribute("Type") ?? "";
+              var target = (rel.getAttribute("Target") ?? "").replaceAll("../", "");
+              if (type.endsWith("diagramDrawing")) {
+                var diagramFile = archive.singleWhereOrNull((f) => f.name.endsWith(target));
+                if (diagramFile != null) getAllShapes(diagramFile, presentation.slides[i]);
+              } else if (type.endsWith("slideLayout")) {
+                var layoutRel = archive.singleWhereOrNull((f) => f.name.endsWith("${target.split("/").last}.rels"));
+                if (layoutRel != null) {
+                  var lRelDoc = xml.XmlDocument.parse(utf8.decode(layoutRel.content));
+                  var layoutFile = archive.singleWhereOrNull((f) => f.name.endsWith(target));
+                  if (layoutFile != null) {
+                    var lDoc = xml.XmlDocument.parse(utf8.decode(layoutFile.content));
+                    var blip = lDoc.findAllElements("p:bg").firstOrNull?.findAllElements("a:blip").firstOrNull;
+                    var embed = blip?.getAttribute("r:embed");
+                    if (embed != null) {
+                      var lRel = lRelDoc.findAllElements("Relationship").firstWhereOrNull((r) => r.getAttribute("Id") == embed);
+                      if (lRel != null) {
+                        var imgName = lRel.getAttribute("Target")?.split("/").last;
+                        if (imgName != null) presentation.slides[i].backgroundImagePath = "$presentationOutputDirectory/$imgName";
+                      }
                     }
                   }
                 }
@@ -246,6 +299,7 @@ class CustomPresentationProcessor {
       List<Widget> tempSlideWidget = await compute(getSlideDetails, {
         'slide': presentation.slides[i],
         'screenWidth': screenWidth,
+        'presentationSize': _slideSizes[presentation.hashCode],
       });
       slideWidgets.addAll(tempSlideWidget);
     }
@@ -259,12 +313,14 @@ class CustomPresentationProcessor {
   static List<Widget> getSlideDetails(Map<String, dynamic> params) {
     Slide slide = params['slide'];
     double screenWidth = params['screenWidth'];
+    Size? presSize = params['presentationSize'];
     
-    List<Widget> tempSlide = [];
     List<Widget> tempShapes = [];
     List<Widget> slideWidget = [];
-    double maxWidth = 600;
-    double maxHeight = 450;
+    
+    // Default to 16:9 if unknown, but usually we'll have it now
+    double maxWidth = presSize?.width ?? 960;
+    double maxHeight = presSize?.height ?? 540;
     int divisionFactor = 12700;
 
     for (int j = 0; j < slide.presentationTextBoxes.length; j++) {
@@ -273,9 +329,6 @@ class CustomPresentationProcessor {
        double w = slide.presentationTextBoxes[j].size.width / divisionFactor;
        double h = slide.presentationTextBoxes[j].size.height / divisionFactor;
        
-       if (dx + w > maxWidth) maxWidth = dx + w;
-       if (dy + h > maxHeight) maxHeight = dy + h;
-
        List<Widget> textBoxTexts = [];
        for (var para in slide.presentationTextBoxes[j].presentationParas) {
          List<TextSpan> textSpans = [];
@@ -302,27 +355,27 @@ class CustomPresentationProcessor {
        double w = slide.presentationShapes[j].size.width / divisionFactor;
        double h = slide.presentationShapes[j].size.height / divisionFactor;
        
-       if (dx + w > maxWidth) maxWidth = dx + w;
-       if (dy + h > maxHeight) maxHeight = dy + h;
-
-       tempShapes.add(Positioned(
-         top: dy,
-         left: dx,
-         child: Container(
-           decoration: BoxDecoration(border: Border.all(color: Colors.blue.withOpacity(0.3))),
-           height: h,
-           width: w,
-           child: Center(child: Text(slide.presentationShapes[j].text, style: const TextStyle(fontSize: 10))),
-         )
-       ));
-    }
-
-    if (tempShapes.isNotEmpty) {
-      tempSlide.add(SizedBox(
-        height: maxHeight,
-        width: maxWidth,
-        child: Stack(children: tempShapes),
-      ));
+       String text = slide.presentationShapes[j].text;
+       
+       if (text.startsWith("IMG|")) {
+         String path = text.substring(4);
+         tempShapes.add(Positioned(
+           top: dy,
+           left: dx,
+           child: Image.file(File(path), width: w, height: h, fit: BoxFit.fill),
+         ));
+       } else {
+         tempShapes.add(Positioned(
+           top: dy,
+           left: dx,
+           child: Container(
+             decoration: BoxDecoration(border: text.isEmpty ? null : Border.all(color: Colors.blue.withOpacity(0.1))),
+             height: h,
+             width: w,
+             child: text.isEmpty ? null : Center(child: Text(text, style: const TextStyle(fontSize: 10))),
+           )
+         ));
+       }
     }
 
     // FIX: Optimized to ensure zero horizontal overflow
