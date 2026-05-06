@@ -62,71 +62,80 @@ class CustomMicrosoftViewerState extends State<CustomMicrosoftViewer> {
   }
 
   Future<void> parseAndShowData() async {
-    _zipDecoder ??= ZipDecoder();
-    archive = _zipDecoder!.decodeBytes(widget.fileBytes);
-    await setupDirectory();
-    
-    if (archive.any((f) => f.name == 'word/document.xml')) {
-      fileType = "word";
-    } else if (archive.any((f) => f.name == 'xl/workbook.xml')) {
-      fileType = "spreadsheet";
-    } else if (archive.any((f) => f.name == 'ppt/presentation.xml')) {
-      fileType = "presentation";
-    }
-
-    if (fileType == "word") {
-      var relFile = archive.singleWhere((f) => f.name.endsWith("document.xml.rels"));
-      getRelationships(relFile);
-      archive.where((f) => f.name.startsWith('word/media/')).forEach((f) => extractMedia(f, wordOutputDirectory));
-      var stylesFile = archive.singleWhere((f) => f.name.endsWith("word/styles.xml"));
-      Map<String, String> defaultValues = {};
-      CommonProcessor().processStylesFile(stylesFile, stylesList, defaultValues);
-      if (defaultValues.isNotEmpty) {
-        if (defaultValues["fontSize"] != null) wordDocument.defaultFontSize = int.parse(defaultValues["fontSize"]!);
-        if (defaultValues["lineSpacing"] != null) wordDocument.defaultLineSpacing = int.parse(defaultValues["lineSpacing"]!);
+    try {
+      debugPrint("Starting to parse document...");
+      _zipDecoder ??= ZipDecoder();
+      archive = _zipDecoder!.decodeBytes(widget.fileBytes);
+      await setupDirectory();
+      
+      if (archive.any((f) => f.name == 'word/document.xml')) {
+        fileType = "word";
+      } else if (archive.any((f) => f.name == 'xl/workbook.xml')) {
+        fileType = "spreadsheet";
+      } else if (archive.any((f) => f.name == 'ppt/presentation.xml')) {
+        fileType = "presentation";
       }
-      var fontTable = archive.singleWhereOrNull((f) => f.name.endsWith("word/fontTable.xml"));
-      if (fontTable != null) {
-        var fontTableRel = archive.singleWhereOrNull((f) => f.name.endsWith("_rels/fontTable.xml.rels"));
-        if (fontTableRel != null) {
-          CommonProcessor().processFonts(fontList, fontTable, fontTableRel);
-          for (var font in fontList) {
-            var fontFile = archive.singleWhereOrNull((f) => f.name.endsWith(font.fileName));
-            if (fontFile != null) await loadFonts(fontFile, font.name, font.fontKey.replaceAll("{", "").replaceAll("}", ""));
+
+      debugPrint("File type detected: $fileType");
+
+      if (fileType == "word") {
+        var relFile = archive.singleWhere((f) => f.name.endsWith("document.xml.rels"));
+        getRelationships(relFile);
+        archive.where((f) => f.name.startsWith('word/media/')).forEach((f) => extractMedia(f, wordOutputDirectory));
+        var stylesFile = archive.singleWhere((f) => f.name.endsWith("word/styles.xml"));
+        Map<String, String> defaultValues = {};
+        CommonProcessor().processStylesFile(stylesFile, stylesList, defaultValues);
+        if (defaultValues.isNotEmpty) {
+          if (defaultValues["fontSize"] != null) wordDocument.defaultFontSize = int.parse(defaultValues["fontSize"]!);
+          if (defaultValues["lineSpacing"] != null) wordDocument.defaultLineSpacing = int.parse(defaultValues["lineSpacing"]!);
+        }
+        var fontTable = archive.singleWhereOrNull((f) => f.name.endsWith("word/fontTable.xml"));
+        if (fontTable != null) {
+          var fontTableRel = archive.singleWhereOrNull((f) => f.name.endsWith("_rels/fontTable.xml.rels"));
+          if (fontTableRel != null) {
+            CommonProcessor().processFonts(fontList, fontTable, fontTableRel);
+            for (var font in fontList) {
+              var fontFile = archive.singleWhereOrNull((f) => f.name.endsWith(font.fileName));
+              if (fontFile != null) await loadFonts(fontFile, font.name, font.fontKey.replaceAll("{", "").replaceAll("}", ""));
+            }
           }
         }
-      }
-      var footNoteFile = archive.singleWhereOrNull((f) => f.name.endsWith("footnotes.xml"));
-      var endNoteFile = archive.singleWhereOrNull((f) => f.name.endsWith("endnotes.xml"));
-      WordProcessor().processFootEndNotes(footNoteFile, endNoteFile, footNotes, endNotes);
-      var wordFile = archive.singleWhere((f) => f.name == 'word/document.xml');
-      WordProcessor().processWordFile(wordFile, elementDepth, relationShips, wordOutputDirectory, stylesList, wordDocument, fileType);
-      List<Widget> tempWidgets = WordProcessor().displayWordFile(fileType, wordDocument, stylesList, footNotes, endNotes);
-      if (mounted) setState(() { wordWidgets = tempWidgets; showProgressBar = false; });
-    } else if (fileType == "spreadsheet") {
-      var relFile = archive.singleWhere((f) => f.name.endsWith("workbook.xml.rels"));
-      getRelationships(relFile);
-      var shareStringsFile = archive.singleWhere((f) => f.name.endsWith("sharedStrings.xml"));
-      getSharedStrings(shareStringsFile);
-      var workbookFile = archive.singleWhere((f) => f.name.endsWith("xl/workbook.xml"));
-      SpreadsheetProcessor().getSpreadSheetDetails(workbookFile, spreadSheet);
-      SpreadsheetProcessor().readAllSheets(spreadSheet, relationShips, archive);
-      List<Widget> tempWidgets = await SpreadsheetProcessor().displaySpreadSheet(spreadSheet, sharedStrings);
-      if (mounted) setState(() { spreadSheetWidgets = tempWidgets; showProgressBar = false; });
-    } else if (fileType == "presentation") {
-      var relFile = archive.singleWhere((f) => f.name.endsWith("presentation.xml.rels"));
-      getRelationships(relFile);
-      archive.where((f) => f.name.startsWith('ppt/media/')).forEach((f) => extractMedia(f, presentationOutputDirectory));
-      var presentationFile = archive.singleWhere((f) => f.name.endsWith("ppt/presentation.xml"));
-      
-      CustomPresentationProcessor().getPresentationDetails(presentationFile, presentation);
-      CustomPresentationProcessor().readAllSlides(presentation, relationShips, archive, presentationOutputDirectory);
-      
-      // Calculate screen width to pass to processor
-      double sw = MediaQuery.of(context).size.width - 32;
+        var footNoteFile = archive.singleWhereOrNull((f) => f.name.endsWith("footnotes.xml"));
+        var endNoteFile = archive.singleWhereOrNull((f) => f.name.endsWith("endnotes.xml"));
+        WordProcessor().processFootEndNotes(footNoteFile, endNoteFile, footNotes, endNotes);
+        var wordFile = archive.singleWhere((f) => f.name == 'word/document.xml');
+        WordProcessor().processWordFile(wordFile, elementDepth, relationShips, wordOutputDirectory, stylesList, wordDocument, fileType);
+        List<Widget> tempWidgets = WordProcessor().displayWordFile(fileType, wordDocument, stylesList, footNotes, endNotes);
+        if (mounted) setState(() { wordWidgets = tempWidgets; showProgressBar = false; });
+      } else if (fileType == "spreadsheet") {
+        var relFile = archive.singleWhere((f) => f.name.endsWith("workbook.xml.rels"));
+        getRelationships(relFile);
+        var shareStringsFile = archive.singleWhere((f) => f.name.endsWith("sharedStrings.xml"));
+        getSharedStrings(shareStringsFile);
+        var workbookFile = archive.singleWhere((f) => f.name.endsWith("xl/workbook.xml"));
+        SpreadsheetProcessor().getSpreadSheetDetails(workbookFile, spreadSheet);
+        SpreadsheetProcessor().readAllSheets(spreadSheet, relationShips, archive);
+        List<Widget> tempWidgets = await SpreadsheetProcessor().displaySpreadSheet(spreadSheet, sharedStrings);
+        if (mounted) setState(() { spreadSheetWidgets = tempWidgets; showProgressBar = false; });
+      } else if (fileType == "presentation") {
+        var relFile = archive.singleWhere((f) => f.name.endsWith("presentation.xml.rels"));
+        getRelationships(relFile);
+        archive.where((f) => f.name.startsWith('ppt/media/')).forEach((f) => extractMedia(f, presentationOutputDirectory));
+        var presentationFile = archive.singleWhere((f) => f.name.endsWith("ppt/presentation.xml"));
+        
+        CustomPresentationProcessor().getPresentationDetails(presentationFile, presentation);
+        CustomPresentationProcessor().readAllSlides(presentation, relationShips, archive, presentationOutputDirectory);
+        
+        // Calculate screen width to pass to processor
+        double sw = MediaQuery.of(context).size.width - 32;
 
-      List<Widget> tempWidgets = await CustomPresentationProcessor().displayPresentation(presentation, sw);
-      if (mounted) setState(() { presentationWidgets = tempWidgets; showProgressBar = false; });
+        List<Widget> tempWidgets = await CustomPresentationProcessor().displayPresentation(presentation, sw);
+        if (mounted) setState(() { presentationWidgets = tempWidgets; showProgressBar = false; });
+      }
+    } catch (e, stack) {
+      debugPrint("Error parsing data: $e");
+      debugPrint(stack.toString());
+      if (mounted) setState(() { showProgressBar = false; });
     }
   }
 
