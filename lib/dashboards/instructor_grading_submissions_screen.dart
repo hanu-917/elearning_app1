@@ -525,7 +525,7 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
                   if (item['file_path'] != null) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening material...")));
                     try {
-                      await _apiService.downloadAndOpenFile(item['file_path'], context: context);
+                      await _apiService.downloadAndOpenFile(item['file_path'], context: context, fileName: fileName);
                       setState(() {}); // refresh the icon state optionally
                     } catch (e) {
                       if (context.mounted) {
@@ -564,7 +564,7 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
                       if (item['file_path'] != null) {
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening material...")));
                         try {
-                          await _apiService.downloadAndOpenFile(item['file_path'], context: context);
+                          await _apiService.downloadAndOpenFile(item['file_path'], context: context, fileName: fileName);
                           setState(() {});
                         } catch (e) {
                           if (context.mounted) {

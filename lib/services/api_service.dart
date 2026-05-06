@@ -1257,7 +1257,7 @@ class ApiService {
   }
 
 
-  Future<void> downloadAndOpenFile(String filePath, {BuildContext? context}) async {
+  Future<void> downloadAndOpenFile(String filePath, {BuildContext? context, String? fileName}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
@@ -1282,20 +1282,26 @@ class ApiService {
           await dir.create(recursive: true);
         }
         
-        String fileName = filePath.split('/').last;
-        if (fileName.isEmpty || !fileName.contains('.')) {
-          fileName = "file_${DateTime.now().millisecondsSinceEpoch}.bin";
+        String finalFileName = fileName ?? filePath.split('/').last;
+        // Ensure extension is preserved if missing from fileName but present in filePath
+        if (!finalFileName.contains('.') && filePath.contains('.')) {
+          final ext = filePath.split('.').last;
+          finalFileName = "$finalFileName.$ext";
+        }
+
+        if (finalFileName.isEmpty || !finalFileName.contains('.')) {
+          finalFileName = "file_${DateTime.now().millisecondsSinceEpoch}.bin";
         }
         
-        final File file = File('${dir.path}/$fileName');
+        final File file = File('${dir.path}/$finalFileName');
         await file.writeAsBytes(response.bodyBytes);
         
-        if (context != null && ['txt', 'docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls'].contains(fileName.split('.').last.toLowerCase())) {
+        if (context != null && ['txt', 'docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls'].contains(finalFileName.split('.').last.toLowerCase())) {
           if (!context.mounted) return;
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => FileViewerScreen(filePath: file.path, fileName: fileName)
+              builder: (context) => FileViewerScreen(filePath: file.path, fileName: finalFileName)
             ),
           );
         } else {

@@ -246,9 +246,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                             final bool urgent = _isUrgent(task['due_date'].toString());
                             return _buildTaskItem(
                               task['title'].toString(),
+                              task['course_title']?.toString() ?? "General",
                               _getDueString(task['due_date'].toString()),
                               urgent ? Colors.orange : Colors.blue,
-                              urgent
+                              urgent,
+                              task['is_group_assignment'] == true
                             );
                           }),
                       ],
@@ -480,7 +482,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     );
   }
 
-  Widget _buildTaskItem(String title, String dueTime, Color accent, bool isUrgent) {
+  Widget _buildTaskItem(String title, String courseTitle, String dueTime, Color accent, bool isUrgent, bool isGroup) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -509,7 +511,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                     color: accent.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.assignment_late_rounded, color: accent, size: 24),
+                  child: Icon(
+                    isGroup ? Icons.groups_rounded : Icons.assignment_late_rounded, 
+                    color: accent, 
+                    size: 24
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -517,14 +523,31 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: isUrgent ? Colors.red.shade50 : accent.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10)
-                        ),
-                        child: Text(dueTime, style: TextStyle(color: isUrgent ? Colors.red : accent, fontSize: 10, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 2),
+                      Text(courseTitle, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: isUrgent ? Colors.red.shade50 : accent.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10)
+                            ),
+                            child: Text(dueTime, style: TextStyle(color: isUrgent ? Colors.red : accent, fontSize: 10, fontWeight: FontWeight.bold)),
+                          ),
+                          if (isGroup) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.cyan.shade50,
+                                borderRadius: BorderRadius.circular(10)
+                              ),
+                              child: const Text("GROUP", style: TextStyle(color: Colors.cyan, fontSize: 10, fontWeight: FontWeight.bold)),
+                            ),
+                          ]
+                        ],
                       )
                     ],
                   ),

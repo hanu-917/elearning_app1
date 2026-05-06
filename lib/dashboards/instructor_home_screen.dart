@@ -106,20 +106,37 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
       if (schedule['content'] == null) continue;
       final content = schedule['content'] as Map<String, dynamic>;
       content.forEach((key, value) {
-        if (myCourseTitles.contains(value.toString().toLowerCase())) {
+        String entry = value.toString().trim().toLowerCase();
+        // Remove pipe and dash suffixes for cleaner matching
+        String courseTitleOnly = entry.split('|')[0].split('-')[0].trim();
+        
+        bool isMyCourse = myCourseTitles.contains(entry) || 
+                         myCourseTitles.contains(courseTitleOnly);
+        
+        // Fallback: check if any of our course identifiers is a substring or vice versa
+        if (!isMyCourse) {
+          isMyCourse = myCourseTitles.any((id) => 
+            id.length > 3 && (entry.contains(id) || id.contains(entry))
+          );
+        }
+
+        if (isMyCourse) {
           final parts = key.split('-');
           if (parts.length == 2) {
-            int slotIdx = int.parse(parts[0]);
-            int dayIdx = int.parse(parts[1]);
-            slots.add({
-              'dayIdx': dayIdx,
-              'slotIdx': slotIdx,
-              'course': value,
-              'schedule': schedule
-            });
+            try {
+              int slotIdx = int.parse(parts[0]);
+              int dayIdx = int.parse(parts[1]);
+              slots.add({
+                'dayIdx': dayIdx,
+                'slotIdx': slotIdx,
+                'course': value,
+                'schedule': schedule
+              });
+            } catch (e) {}
           }
         }
       });
+
     }
 
     if (slots.isEmpty) {

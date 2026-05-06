@@ -592,10 +592,10 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
               color: Color(0xFF05398F),
               size: 20,
             ),
-            onPressed: () => _launchURL(context, fileUrl),
+            onPressed: () => _launchURL(context, fileUrl, name),
           ),
         ),
-        onTap: () => _launchURL(context, fileUrl),
+        onTap: () => _launchURL(context, fileUrl, name),
       ),
     );
   }
@@ -611,14 +611,14 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
     return Icons.insert_drive_file_rounded;
   }
 
-  Future<void> _launchURL(BuildContext context, String url) async {
+  Future<void> _launchURL(BuildContext context, String url, String? fileName) async {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Downloading and opening file...")),
       );
     }
     try {
-      await _apiService.downloadAndOpenFile(url, context: context);
+      await _apiService.downloadAndOpenFile(url, context: context, fileName: fileName);
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(

@@ -112,7 +112,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening guide...")));
     try {
-      await _apiService.downloadAndOpenFile(urlStr, context: context);
+      await _apiService.downloadAndOpenFile(urlStr, context: context, fileName: "Course Guide");
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
@@ -443,7 +443,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening material...")));
     try {
-      await _apiService.downloadAndOpenFile(urlStr, context: context);
+      await _apiService.downloadAndOpenFile(urlStr, context: context, fileName: material['title']);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     }

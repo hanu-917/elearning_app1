@@ -234,7 +234,7 @@ class _InstructorMaterialsScreenState extends State<InstructorMaterialsScreen> {
     
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening material...")));
     try {
-      await _apiService.downloadAndOpenFile(urlStr, context: context);
+      await _apiService.downloadAndOpenFile(urlStr, context: context, fileName: material['title']);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     }
