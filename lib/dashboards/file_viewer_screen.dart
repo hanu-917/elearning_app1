@@ -80,11 +80,18 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
     final isMicrosoftSupported = ['docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls'].contains(ext);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F7FC), // Use a light grey theme consistent with the app
       appBar: AppBar(
-        title: Text(widget.fileName),
+        title: Text(widget.fileName, style: const TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFFF4F7FC),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF05398F), size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           IconButton(
-            icon: Icon(isLandscape ? Icons.screen_lock_portrait_rounded : Icons.screen_lock_landscape_rounded),
+            icon: Icon(isLandscape ? Icons.screen_lock_portrait_rounded : Icons.screen_lock_landscape_rounded, color: const Color(0xFF05398F)),
             onPressed: _toggleOrientation,
             tooltip: isLandscape ? "Switch to Portrait" : "Switch to Landscape",
           ),

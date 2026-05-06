@@ -123,7 +123,7 @@ class CustomMicrosoftViewerState extends State<CustomMicrosoftViewer> {
       CustomPresentationProcessor().readAllSlides(presentation, relationShips, archive, presentationOutputDirectory);
       
       // Calculate screen width to pass to processor
-      double sw = MediaQuery.of(context).size.width;
+      double sw = MediaQuery.of(context).size.width - 32;
 
       List<Widget> tempWidgets = await CustomPresentationProcessor().displayPresentation(presentation, sw);
       if (mounted) setState(() { presentationWidgets = tempWidgets; showProgressBar = false; });
@@ -179,11 +179,11 @@ class CustomMicrosoftViewerState extends State<CustomMicrosoftViewer> {
       children: [
         Positioned.fill(
           child: InteractiveViewer(
-            boundaryMargin: EdgeInsets.zero,
+            boundaryMargin: const EdgeInsets.all(20),
             minScale: 1.0, 
             maxScale: 4.0,
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

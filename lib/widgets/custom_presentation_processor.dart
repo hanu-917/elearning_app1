@@ -249,8 +249,7 @@ class CustomPresentationProcessor {
       });
       slideWidgets.addAll(tempSlideWidget);
     }
-    tempList.add(Container(
-      color: Colors.grey[200],
+    tempList.add(SizedBox(
       width: screenWidth,
       child: Column(children: slideWidgets),
     ));
