@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 
 class StudentProfileDownloadsScreen extends StatefulWidget {
   const StudentProfileDownloadsScreen({super.key});
@@ -9,8 +11,48 @@ class StudentProfileDownloadsScreen extends StatefulWidget {
 
 class _StudentProfileDownloadsScreenState extends State<StudentProfileDownloadsScreen> {
   // Mock data
-  double _currentUsageGB = 2.4;
+  double _currentUsageGB = 0.0;
   double _limitGB = 5.0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRealUsage();
+  }
+
+  Future<void> _loadRealUsage() async {
+    setState(() => _isLoading = true);
+    try {
+      Directory directory;
+      if (Platform.isAndroid) {
+        directory = Directory('/storage/emulated/0/Download/ELMS');
+      } else {
+        directory = Directory('${(await getApplicationDocumentsDirectory()).path}/ELMS');
+      }
+
+      if (await directory.exists()) {
+        int totalBytes = 0;
+        final List<FileSystemEntity> files = directory.listSync();
+        for (var file in files) {
+          if (file is File) {
+            totalBytes += await file.length();
+          }
+        }
+        if (mounted) {
+          setState(() {
+            _currentUsageGB = totalBytes / (1024 * 1024 * 1024);
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    } catch (e) {
+      debugPrint("Error loading usage: $e");
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

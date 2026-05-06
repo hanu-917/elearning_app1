@@ -15,11 +15,11 @@ class InstructorProfileScreen extends StatefulWidget {
 }
 
 class _InstructorProfileScreenState extends State<InstructorProfileScreen> {
-  String _title = 'Dr.';
+  String _title = '';
   String _firstName = '';
   String _middleName = '';
-  String _lastName = 'Alemu';
-  String _email = 'alemu.instructor@bdu.edu';
+  String _lastName = '';
+  String _email = '';
 
   @override
   void initState() {

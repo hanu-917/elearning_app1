@@ -33,10 +33,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     setState(() {
       _title = prefs.getString('title') ?? '';
       if (_title == 'None') _title = '';
-      _firstName = prefs.getString('first_name') ?? 'Student';
+      _firstName = prefs.getString('first_name') ?? '';
       _middleName = prefs.getString('middle_name') ?? '';
       _lastName = prefs.getString('last_name') ?? '';
-      _email = prefs.getString('email') ?? 'student@bdu.edu.et';
+      _email = prefs.getString('email') ?? '';
       _institutionalId = prefs.getString('institutional_id') ?? 'N/A';
     });
   }

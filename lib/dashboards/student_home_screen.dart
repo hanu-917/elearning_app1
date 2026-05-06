@@ -15,12 +15,14 @@ class StudentHomeScreen extends StatefulWidget {
 
 class _StudentHomeScreenState extends State<StudentHomeScreen> {
   String _title = '';
-  String _firstName = 'Student';
+  String _firstName = '';
   final ApiService _apiService = ApiService();
   bool _isScheduleLoading = true;
   bool _isTasksLoading = true;
   List<Map<String, dynamic>> _todaySchedule = [];
   List<dynamic> _pendingTasks = [];
+  List<dynamic> _courses = [];
+  bool _isLoadingCourses = true;
 
   @override
   void initState() {
@@ -35,7 +37,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     setState(() {
       _title = prefs.getString('title') ?? '';
       if (_title == 'None') _title = '';
-      _firstName = prefs.getString('first_name') ?? 'Student';
+      _firstName = prefs.getString('first_name') ?? '';
     });
   }
 
@@ -44,10 +46,17 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     setState(() => _isScheduleLoading = true);
     try {
       final courses = await _apiService.getStudentCourses();
+      if (mounted) {
+        setState(() {
+          _courses = courses;
+          _isLoadingCourses = false;
+        });
+      }
       final schedules = await _apiService.getMySchedules();
 
       _processTodaySchedule(courses, schedules);
     } catch (e) {
+      if (mounted) setState(() => _isLoadingCourses = false);
       debugPrint("Error fetching schedule: $e");
     } finally {
       if (mounted) setState(() => _isScheduleLoading = false);
@@ -326,6 +335,31 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   Widget _buildHorizontalCards(BuildContext context) {
     double cardWidth = MediaQuery.of(context).size.width - 40; // Full width with 20 padding on each side
 
+    String displayTitle = "Welcome to ELMS";
+    String displaySubtitle = "Start your learning journey";
+    double progress = 0.0;
+    
+    if (_isLoadingCourses) {
+       return Padding(
+         padding: const EdgeInsets.symmetric(horizontal: 20),
+         child: _buildBaseCard(
+           width: cardWidth,
+           gradient: const LinearGradient(
+             colors: [Color(0xFF42A5F5), Color(0xFF1976D2)],
+             begin: Alignment.topLeft,
+             end: Alignment.bottomRight,
+           ),
+           child: const Center(child: CircularProgressIndicator(color: Colors.white)),
+         ),
+       );
+    }
+
+    if (_courses.isNotEmpty) {
+      displayTitle = _courses.first['title']?.toString() ?? "Course Hub";
+      displaySubtitle = _courses.first['course_code']?.toString() ?? "My Enrolled Course";
+      // progress = 0.0; // Keep at 0 until we have real logic
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: _buildBaseCard(
@@ -341,9 +375,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Text("Continue Learning", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
-                Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: 20),
+              children: [
+                Text(_courses.isNotEmpty ? "Continue Learning" : "Join a Course", style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+                const Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: 20),
               ],
             ),
             const Spacer(),
@@ -354,14 +388,15 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text("Ch 3: Firewalls", 
-                        style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    children: [
+                      Text(displayTitle, 
+                        style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
                         overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
-                      SizedBox(height: 8),
-                      Text("Computer Security", 
-                        style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                      const SizedBox(height: 8),
+                      Text(displaySubtitle, 
+                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -374,13 +409,13 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                     fit: StackFit.expand,
                     children: [
                       CircularProgressIndicator(
-                        value: 0.65,
+                        value: progress,
                         strokeWidth: 6,
                         backgroundColor: Colors.white.withOpacity(0.3),
                         valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
-                      const Center(
-                        child: Text("65%", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                      Center(
+                        child: Text("${(progress * 100).toInt()}%", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                       ),
                     ],
                   ),

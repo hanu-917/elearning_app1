@@ -22,9 +22,9 @@ class _StudentProfileAccountScreenState extends State<StudentProfileAccountScree
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _studentId = prefs.getString('institutional_id') ?? 'BDU-123456';
-      _usernameController.text = prefs.getString('username') ?? 'student_user';
-      _groupNameController.text = prefs.getString('group_name') ?? 'CS Group A';
+      _studentId = prefs.getString('institutional_id') ?? '';
+      _usernameController.text = prefs.getString('username') ?? '';
+      _groupNameController.text = prefs.getString('group_name') ?? '';
     });
   }
 

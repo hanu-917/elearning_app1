@@ -27,7 +27,7 @@ class InstructorHomeScreen extends StatefulWidget {
 
 class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
   final ApiService _apiService = ApiService();
-  String _title = 'Professor';
+  String _title = '';
   String _firstName = '';
   List<dynamic> _courses = [];
   bool _isLoadingCourses = false;
@@ -205,8 +205,7 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _title = prefs.getString('title') ?? 'Professor';
-      if (_title.isEmpty) _title = 'Professor';
+      _title = prefs.getString('title') ?? '';
       if (_title == 'None') _title = '';
       _firstName = prefs.getString('first_name') ?? '';
     });

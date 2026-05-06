@@ -1,4 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:math';
 
 class StudentDownloadsScreen extends StatefulWidget {
   const StudentDownloadsScreen({super.key});
@@ -11,12 +14,54 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
   String _selectedFilter = 'All';
   final List<String> _filters = ['All', 'Documents', 'Videos', 'Images'];
   late ScrollController _scrollController;
+  List<FileSystemEntity> _downloadedFiles = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     // Start scrolled down exactly enough to hide the 190px of expanded flexible space
     _scrollController = ScrollController(initialScrollOffset: 190.0);
+    _loadDownloadedFiles();
+  }
+
+  Future<void> _loadDownloadedFiles() async {
+    setState(() => _isLoading = true);
+    try {
+      Directory directory;
+      if (Platform.isAndroid) {
+        directory = Directory('/storage/emulated/0/Download/ELMS');
+      } else {
+        directory = Directory('${(await getApplicationDocumentsDirectory()).path}/ELMS');
+      }
+
+      if (await directory.exists()) {
+        final List<FileSystemEntity> files = directory.listSync();
+        if (mounted) {
+          setState(() {
+            _downloadedFiles = files.where((f) => f is File).toList();
+            _isLoading = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _downloadedFiles = [];
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error loading downloads: $e");
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes <= 0) return "0 B";
+    const suffixes = ["B", "KB", "MB", "GB", "TB"];
+    var i = (log(bytes) / log(1024)).floor();
+    return ((bytes / pow(1024, i)).toStringAsFixed(1)) + ' ' + suffixes[i];
   }
 
   @override
@@ -118,32 +163,41 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
             ),
           ),
 
-          // Search Results / Download List grouped by Date
+          // Search Results / Download List
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                 _buildDateSection("December 21 2025"),
-                 _buildDownloadFileTile("Compiler Design Lecture Note - 2.pdf", "8.14 MB", "Miraf M."),
-                 _buildDownloadFileTile("Research Methods in Computer Scie...txt", "5.9 MB", "Muluken B."),
-                 
-                 const SizedBox(height: 15),
-                 
-                 _buildDateSection("January 23 2026"),
-                 _buildDownloadFileTile("Complexity Classes Part 2 | NPC (N....mp4", "38.3 MB", "Dr. Debas"),
-                 _buildDownloadFileTile("Image 02.png", "122 KB", "Abebe M."),
-                 _buildDownloadFileTile("Complexity Theory.pptx", "4.4 MB", "Dr. Debas"),
-                 
-                 const SizedBox(height: 80), // Padding at bottom for navigation bar
-              ]),
-            ),
+            sliver: _isLoading 
+              ? const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator())))
+              : _downloadedFiles.isEmpty
+                ? const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(40), child: Text("No downloaded files found", style: TextStyle(color: Colors.black38)))))
+                : SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final file = _downloadedFiles[index] as File;
+                        final name = file.path.split(Platform.pathSeparator).last;
+                        return _buildDownloadFileTile(
+                          name, 
+                          _formatBytes(file.lengthSync()), 
+                          "Local Device"
+                        );
+                      },
+                      childCount: _downloadedFiles.length,
+                    ),
+                  ),
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
     );
   }
 
   Widget _buildStorageStatus() {
+    int totalBytes = 0;
+    for (var f in _downloadedFiles) {
+      if (f is File) totalBytes += f.lengthSync();
+    }
+    double progress = (totalBytes / (5 * 1024 * 1024 * 1024)).clamp(0.0, 1.0); // Assume 5GB limit for UI
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
@@ -174,10 +228,10 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
             ],
           ),
           const SizedBox(height: 5),
-          const Text("182 MB", style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
+          Text(_formatBytes(totalBytes), style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           LinearProgressIndicator(
-            value: 0.25, 
+            value: progress, 
             backgroundColor: Colors.white.withOpacity(0.3),
             valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
             borderRadius: BorderRadius.circular(5),
