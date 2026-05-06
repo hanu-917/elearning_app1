@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
+import '../widgets/downloadable_behavior.dart';
 
 class StudentMaterialsScreen extends StatefulWidget {
   const StudentMaterialsScreen({super.key});
@@ -203,73 +204,104 @@ class _StudentMaterialsScreenState extends State<StudentMaterialsScreen> {
       iconColor = Colors.purple;
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => _openMaterial(material),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(iconData, color: iconColor, size: 24),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, 
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (description.isNotEmpty && description != 'null') ...[
-                        const SizedBox(height: 2),
-                        Text(description, 
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+    return DownloadableBehavior(
+      filePath: material['file_path']?.toString() ?? '',
+      fileName: material['title'] ?? 'material',
+      builder: (context, isDownloaded, isDownloading, isPaused, progress, onTap) {
+        IconData currentIconData = iconData;
+        Color currentIconColor = iconColor;
+
+        if (!isDownloaded && !isDownloading) {
+          currentIconData = Icons.download_rounded;
+          currentIconColor = Colors.grey;
+        } else if (isDownloading) {
+          currentIconData = isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded;
+          currentIconColor = Colors.orange;
+        }
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        if (isDownloading)
+                          SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: CircularProgressIndicator(
+                              value: progress,
+                              strokeWidth: 3,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                            ),
+                          ),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: currentIconColor.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(currentIconData, color: currentIconColor, size: 24),
                         ),
                       ],
-                      const SizedBox(height: 6),
-                      Row(
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (date.isNotEmpty) ...[
-                            Text(date, style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
-                            const SizedBox(width: 12),
+                          Text(title, 
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (description.isNotEmpty && description != 'null') ...[
+                            const SizedBox(height: 2),
+                            Text(description, 
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ],
-                          Text(_formatFileSize(fileSize), style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              if (date.isNotEmpty) ...[
+                                Text(date, style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+                                const SizedBox(width: 12),
+                              ],
+                              Text(_formatFileSize(fileSize), style: TextStyle(fontSize: 11, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const Icon(Icons.download_rounded, color: Colors.black26),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      }
     );
   }
 
@@ -280,19 +312,4 @@ class _StudentMaterialsScreenState extends State<StudentMaterialsScreen> {
     return ((bytes / math.pow(1024, i)).toStringAsFixed(1)) + ' ' + suffixes[i];
   }
 
-  Future<void> _openMaterial(dynamic material) async {
-    try {
-      final filePath = material['file_path'];
-      if (filePath == null) return;
-      
-      await _apiService.downloadAndOpenFile(filePath, context: context, fileName: material['title']);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not open file: $e')),
-        );
-      }
-    }
-  }
 }
-

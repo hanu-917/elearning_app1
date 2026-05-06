@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../widgets/downloadable_behavior.dart';
 
 class InstructorGradingSubmissionsScreen extends StatefulWidget {
   final dynamic gradingTask;
@@ -514,55 +515,67 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
           ),
           const SizedBox(height: 16),
           // Submitted File File Preview
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F7FC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.black12),
-            ),
-            child: InkWell(
-              onTap: () async {
-                  if (item['file_path'] != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening material...")));
-                    try {
-                      await _apiService.downloadAndOpenFile(item['file_path'], context: context, fileName: fileName);
-                      setState(() {}); // refresh the icon state optionally
-                    } catch (e) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-                      }
-                    }
-                  }
-              },
-              child: Row(
-                children: [
-                  FutureBuilder<bool>(
-                    future: item['file_path'] != null ? _apiService.isFileDownloaded(item['file_path']) : Future.value(false),
-                    builder: (context, snapshot) {
-                      IconData defaultIcon = fileName.toLowerCase().endsWith('.pdf') ? Icons.picture_as_pdf_rounded : Icons.description_rounded;
-                      Color defaultColor = fileName.toLowerCase().endsWith('.pdf') ? Colors.redAccent : Colors.blueAccent;
-                      
-                      if (snapshot.connectionState == ConnectionState.done && snapshot.data == false) {
-                        defaultIcon = Icons.download_rounded;
-                        defaultColor = Colors.grey;
-                      }
-                      return Icon(defaultIcon, color: defaultColor, size: 24);
-                    }
+          DownloadableBehavior(
+            filePath: item['file_path']?.toString() ?? '',
+            fileName: fileName,
+            builder: (context, isDownloaded, isDownloading, isPaused, progress, onTap) {
+              IconData mainIcon = fileName.toLowerCase().endsWith('.pdf') ? Icons.picture_as_pdf_rounded : Icons.description_rounded;
+              Color mainColor = fileName.toLowerCase().endsWith('.pdf') ? Colors.redAccent : Colors.blueAccent;
+              
+              if (!isDownloaded && !isDownloading) {
+                mainIcon = Icons.download_rounded;
+                mainColor = Colors.grey;
+              } else if (isDownloading) {
+                mainIcon = isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded;
+                mainColor = Colors.orange;
+              }
+
+              return Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F7FC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.black12),
+                ),
+                child: InkWell(
+                  onTap: onTap,
+                  child: Row(
+                    children: [
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          if (isDownloading)
+                            SizedBox(
+                              width: 32,
+                              height: 32,
+                              child: CircularProgressIndicator(
+                                value: progress,
+                                strokeWidth: 3,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                              ),
+                            ),
+                          Icon(mainIcon, color: mainColor, size: 24),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(displayFileName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87), overflow: TextOverflow.ellipsis),
+                            Text(
+                              isDownloading 
+                                ? (isPaused ? "Paused" : "Downloading... ${(progress != null ? (progress * 100).toStringAsFixed(0) : "0")}%") 
+                                : (!isDownloaded ? "Tap to download" : "Click to view submission"), 
+                            style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(displayFileName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black87), overflow: TextOverflow.ellipsis),
-                        const Text("Click to view submission", style: TextStyle(color: Colors.black54, fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            }
           ),
           const SizedBox(height: 16),
           // Action Button

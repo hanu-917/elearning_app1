@@ -1318,7 +1318,7 @@ class ApiService {
     }
   }
 
-  Future<bool> isFileDownloaded(String filePath) async {
+  Future<bool> isFileDownloaded(String filePath, {String? fileName}) async {
     if (filePath.isEmpty) return false;
     try {
       Directory dir;
@@ -1327,9 +1327,15 @@ class ApiService {
       } else {
         dir = Directory('${(await getApplicationDocumentsDirectory()).path}/ELMS');
       }
-      String fileName = filePath.split('/').last;
-      if (fileName.isEmpty || !fileName.contains('.')) return false;
-      final file = File('${dir.path}/$fileName');
+      
+      String finalFileName = fileName ?? filePath.split('/').last;
+      if (!finalFileName.contains('.') && filePath.contains('.')) {
+        final ext = filePath.split('.').last;
+        finalFileName = "$finalFileName.$ext";
+      }
+      
+      if (finalFileName.isEmpty || !finalFileName.contains('.')) return false;
+      final file = File('${dir.path}/$finalFileName');
       return await file.exists();
     } catch (_) {
       return false;
