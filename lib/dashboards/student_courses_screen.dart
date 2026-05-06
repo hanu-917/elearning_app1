@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'course_details_screen.dart';
 import 'student_all_courses_screen.dart';
+import 'student_assignments_screen.dart';
+import 'student_grades_screen.dart';
+import 'student_schedule_screen.dart';
+import 'student_materials_screen.dart';
 
 class StudentCoursesScreen extends StatefulWidget {
   const StudentCoursesScreen({super.key});
@@ -148,17 +152,49 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                     children: [
                       Row(
                         children: [
-                          Expanded(child: _buildActionChip("Assessments", Icons.assignment_turned_in_rounded, const Color(0xFF2E7D32), const Color(0xFF66BB6A))),
+                          Expanded(
+                            child: _buildActionChip(
+                              "Assessments", 
+                              Icons.assignment_turned_in_rounded, 
+                              const Color(0xFF2E7D32), 
+                              const Color(0xFF66BB6A),
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentAssignmentsScreen())),
+                            ),
+                          ),
                           const SizedBox(width: 15),
-                          Expanded(child: _buildActionChip("Grades", Icons.military_tech_rounded, const Color(0xFFFF8F00), const Color(0xFFFFCA28))),
+                          Expanded(
+                            child: _buildActionChip(
+                              "Grades", 
+                              Icons.military_tech_rounded, 
+                              const Color(0xFFFF8F00), 
+                              const Color(0xFFFFCA28),
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentGradesScreen())),
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 15),
                       Row(
                         children: [
-                          Expanded(child: _buildActionChip("Schedule", Icons.calendar_month_rounded, const Color(0xFF05398F), const Color(0xFF09AEF5))),
+                          Expanded(
+                            child: _buildActionChip(
+                              "Schedule", 
+                              Icons.calendar_month_rounded, 
+                              const Color(0xFF05398F), 
+                              const Color(0xFF09AEF5),
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentScheduleScreen())),
+                            ),
+                          ),
                           const SizedBox(width: 15),
-                          Expanded(child: _buildActionChip("Discussions", Icons.forum_rounded, const Color(0xFF6A1B9A), const Color(0xFFAB47BC))),
+                          Expanded(
+                            child: _buildActionChip(
+                              "Materials", 
+                              Icons.folder_shared_rounded, 
+                              const Color(0xFF6A1B9A), 
+                              const Color(0xFFAB47BC),
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentMaterialsScreen())),
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -257,7 +293,7 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
     return Icons.menu_book_rounded;
   }
 
-  Widget _buildActionChip(String label, IconData icon, Color darkColor, Color lightColor) {
+  Widget _buildActionChip(String label, IconData icon, Color darkColor, Color lightColor, {VoidCallback? onTap}) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -269,7 +305,7 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () {
+          onTap: onTap ?? () {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text("$label feature coming soon.")),
             );
