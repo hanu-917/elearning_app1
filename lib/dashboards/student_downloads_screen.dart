@@ -17,6 +17,10 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
   late ScrollController _scrollController;
   List<FileSystemEntity> _downloadedFiles = [];
   bool _isLoading = true;
+  final Set<String> _selectedFilePaths = {};
+  bool _isSearching = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -67,183 +71,209 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    bool isSelectionMode = _selectedFilePaths.isNotEmpty;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
-      body: CustomScrollView(
-        controller: _scrollController,
-        physics: const BouncingScrollPhysics(), 
-        slivers: [
-          // The SliverAppBar that contains the Storage widget and expands when dragged down
-          SliverAppBar(
-            backgroundColor: const Color(0xFFF4F7FC),
-            elevation: 0,
-            pinned: true,
-            floating: false,
-            title: const Text(
-              "Downloads",
-              style: TextStyle(color: Color(0xFF05398F), fontSize: 24, fontWeight: FontWeight.bold)
-            ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.search_rounded, color: Color(0xFF05398F)),
-                onPressed: () {},
+      appBar: AppBar(
+        backgroundColor: isSelectionMode ? const Color(0xFF05398F) : const Color(0xFFF4F7FC),
+        elevation: 0,
+        leading: isSelectionMode 
+          ? IconButton(
+              icon: const Icon(Icons.close_rounded, color: Colors.white),
+              onPressed: () => setState(() => _selectedFilePaths.clear()),
+            )
+          : _isSearching
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF05398F)),
+                onPressed: () => setState(() {
+                  _isSearching = false;
+                  _searchQuery = '';
+                  _searchController.clear();
+                }),
+              )
+            : IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF05398F)),
+                onPressed: () => Navigator.pop(context),
               ),
-            ],
-          ),
-          
-          // Sticky Filter Chips Below App Bar
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _FilterHeaderDelegate(
-              child: Container(
-                color: const Color(0xFFF4F7FC),
-                width: double.infinity,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  child: Row(
-                    children: _filters.map((filter) {
-                      bool isSelected = _selectedFilter == filter;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedFilter = filter;
-                          });
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          margin: const EdgeInsets.only(right: 12),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFF09AEF5) : Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
-                                blurRadius: 8,
-                                offset: const Offset(0, 3),
-                              )
-                            ],
-                          ),
-                          child: Text(
-                            filter,
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.black54,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
+        title: isSelectionMode 
+          ? Text("${_selectedFilePaths.length} Selected", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold))
+          : _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                onChanged: (val) => setState(() => _searchQuery = val),
+                decoration: const InputDecoration(
+                  hintText: "Search files...",
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.black38),
                 ),
+                style: const TextStyle(color: Color(0xFF05398F), fontSize: 18, fontWeight: FontWeight.w600),
+              )
+            : const Text(
+                "Downloads",
+                style: TextStyle(color: Color(0xFF05398F), fontSize: 24, fontWeight: FontWeight.bold)
               ),
+        actions: [
+          if (isSelectionMode)
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+              onPressed: _deleteSelectedFiles,
+            )
+          else if (_isSearching)
+            IconButton(
+              icon: const Icon(Icons.close_rounded, color: Color(0xFF05398F)),
+              onPressed: () => setState(() {
+                _searchQuery = '';
+                _searchController.clear();
+              }),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.search_rounded, color: Color(0xFF05398F)),
+              onPressed: () => setState(() => _isSearching = true),
             ),
-          ),
-
-          // Search Results / Download List
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            sliver: _isLoading 
-              ? const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator())))
-              : Builder(
-                  builder: (context) {
-                    final filteredFiles = _downloadedFiles.where((f) {
-                      if (_selectedFilter == 'All') return true;
-                      String ext = f.path.split('.').last.toLowerCase();
-                      if (_selectedFilter == 'Documents') return ['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx'].contains(ext);
-                      if (_selectedFilter == 'Videos') return ['mp4', 'avi', 'mov'].contains(ext);
-                      if (_selectedFilter == 'Images') return ['jpg', 'jpeg', 'png', 'gif'].contains(ext);
-                      return false;
-                    }).toList();
-
-                    if (filteredFiles.isEmpty) {
-                      return const SliverToBoxAdapter(child: Center(child: Padding(padding: EdgeInsets.all(40), child: Text("No downloaded files found", style: TextStyle(color: Colors.black38)))));
-                    }
-
-                    return SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final file = filteredFiles[index] as File;
-                        final name = file.path.split(Platform.pathSeparator).last;
-                        return _buildDownloadFileTile(
-                          name, 
-                          _formatBytes(file.lengthSync()), 
-                          "Local Device",
-                          file.path,
-                        );
-                      },
-                      childCount: filteredFiles.length,
+        ],
+      ),
+      body: SingleChildScrollView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Filter Chips
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: _filters.map((filter) {
+                  bool isSelected = _selectedFilter == filter;
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedFilter = filter;
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      margin: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isSelected ? const Color(0xFF09AEF5) : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          )
+                        ],
+                      ),
+                      child: Text(
+                        filter,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.black54,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                   );
-                },
+                }).toList(),
               ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: 80)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStorageStatus() {
-    int totalBytes = 0;
-    for (var f in _downloadedFiles) {
-      if (f is File) totalBytes += f.lengthSync();
-    }
-    double progress = (totalBytes / (5 * 1024 * 1024 * 1024)).clamp(0.0, 1.0); // Assume 5GB limit for UI
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF09AEF5), Color(0xFF05398F)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // Download List
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _isLoading 
+                ? const Center(child: Padding(padding: EdgeInsets.all(40), child: CircularProgressIndicator()))
+                : _buildFileList(),
+            ),
+            const SizedBox(height: 80),
+          ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF05398F).withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-               Text("Local Storage Used", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
-               Icon(Icons.sd_storage_rounded, color: Colors.white70, size: 20)
-            ],
-          ),
-          const SizedBox(height: 5),
-          Text(_formatBytes(totalBytes), style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          LinearProgressIndicator(
-            value: progress, 
-            backgroundColor: Colors.white.withOpacity(0.3),
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-            borderRadius: BorderRadius.circular(5),
-            minHeight: 6,
-          ),
-          const SizedBox(height: 8),
-          const Text("Saved for Offline Viewing", style: TextStyle(color: Colors.white60, fontSize: 11)),
-        ],
       ),
     );
   }
+
+  Future<void> _deleteSelectedFiles() async {
+    final count = _selectedFilePaths.length;
+    bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Files"),
+        content: Text("Are you sure you want to delete $count selected files?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("CANCEL")),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true), 
+            child: const Text("DELETE", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      for (String path in _selectedFilePaths) {
+        try {
+          final file = File(path);
+          if (await file.exists()) await file.delete();
+        } catch (e) {
+          debugPrint("Error deleting file $path: $e");
+        }
+      }
+      setState(() {
+        _selectedFilePaths.clear();
+      });
+      _loadDownloadedFiles();
+    }
+  }
+
+  Widget _buildFileList() {
+    final filteredFiles = _downloadedFiles.where((f) {
+      final name = f.path.split(Platform.pathSeparator).last.toLowerCase();
+      final queryMatch = name.contains(_searchQuery.toLowerCase());
+      if (!queryMatch) return false;
+
+      if (_selectedFilter == 'All') return true;
+      String ext = f.path.split('.').last.toLowerCase();
+      if (_selectedFilter == 'Documents') return ['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx'].contains(ext);
+      if (_selectedFilter == 'Videos') return ['mp4', 'avi', 'mov'].contains(ext);
+      if (_selectedFilter == 'Images') return ['jpg', 'jpeg', 'png', 'gif'].contains(ext);
+      return false;
+    }).toList();
+
+    if (filteredFiles.isEmpty) {
+      return const Center(child: Padding(padding: EdgeInsets.all(40), child: Text("No downloaded files found", style: TextStyle(color: Colors.black38))));
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: filteredFiles.length,
+      itemBuilder: (context, index) {
+        final file = filteredFiles[index] as File;
+        final name = file.path.split(Platform.pathSeparator).last;
+        return _buildDownloadFileTile(
+          name, 
+          _formatBytes(file.lengthSync()), 
+          "Local Device",
+          file.path,
+        );
+      },
+    );
+  }
+
 
   Widget _buildDateSection(String date) {
     return Padding(
@@ -262,12 +292,37 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
   Widget _buildDownloadFileTile(String name, String size, String author, String path) {
     IconData icon = _getIconForFile(name);
     Color iconColor = _getColorForFile(name);
+    bool isSelected = _selectedFilePaths.contains(path);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: isSelected ? const Color(0xFF09AEF5).withOpacity(0.1) : Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        border: isSelected ? Border.all(color: const Color(0xFF09AEF5), width: 1.5) : null,
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
+        onLongPress: () {
+          setState(() {
+            if (isSelected) {
+              _selectedFilePaths.remove(path);
+            } else {
+              _selectedFilePaths.add(path);
+            }
+          });
+        },
         onTap: () async {
+          if (_selectedFilePaths.isNotEmpty) {
+            setState(() {
+              if (isSelected) {
+                _selectedFilePaths.remove(path);
+              } else {
+                _selectedFilePaths.add(path);
+              }
+            });
+            return;
+          }
           try {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Opening file...")));
             final api = ApiService();
@@ -280,13 +335,22 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: iconColor, size: 24),
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFF09AEF5) : iconColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isSelected ? Icons.check_rounded : icon, 
+                      color: isSelected ? Colors.white : iconColor, 
+                      size: 24
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -309,6 +373,8 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
                   ],
                 ),
               ),
+              if (isSelected)
+                const Icon(Icons.check_circle_rounded, color: Color(0xFF09AEF5), size: 24),
             ],
           ),
         ),
@@ -342,29 +408,6 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
     if (ext.contains('mp3') || ext.contains('wav') || ext.contains('aac')) return Colors.pink.shade400;
 
     return Colors.blueGrey;
-  }
-}
-
-// Simple Delegate to keep the Filter Header pinned to the top below the AppBar
-class _FilterHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
-
-  _FilterHeaderDelegate({required this.child});
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return child;
-  }
-
-  @override
-  double get maxExtent => 60.0;
-
-  @override
-  double get minExtent => 60.0;
-
-  @override
-  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
-    return true;
   }
 }
 
