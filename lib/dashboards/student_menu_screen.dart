@@ -5,6 +5,7 @@ import 'student_downloads_screen.dart';
 import 'help_support_screen.dart';
 import 'account_settings_screen.dart';
 import 'system_messages_screen.dart';
+import 'academic_calendar_screen.dart';
 
 class StudentMenuScreen extends StatefulWidget {
   const StudentMenuScreen({super.key});
@@ -60,7 +61,7 @@ class _StudentMenuScreenState extends State<StudentMenuScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Groups section coming soon!")));
                 }),
                 _buildMenuIcon(Icons.calendar_month_rounded, "Calendar", const Color(0xFFFFFDE7), Colors.amber, () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Calendar coming soon!")));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const AcademicCalendarScreen()));
                 }),
                 _buildMenuIcon(Icons.download_rounded, "Downloads", const Color(0xFFE1F5FE), Colors.lightBlue, () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentDownloadsScreen()));

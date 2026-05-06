@@ -1188,6 +1188,31 @@ class ApiService {
       throw Exception('Server Error: $e');
     }
   }
+  Future<List<dynamic>> getCalendars() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/calendars'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'] ?? [];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load calendars');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
   Future<List<dynamic>> getMySchedules() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -1262,8 +1287,32 @@ class ApiService {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
-      String cleanBaseUrl = baseUrl.replaceAll('/api', '');
-      String url = '$cleanBaseUrl$filePath';
+      // Normalize backslashes (common in Windows paths from backend)
+      String normalizedPath = filePath.replaceAll('\\', '/');
+      
+      String url;
+      if (normalizedPath.startsWith('http')) {
+        url = normalizedPath;
+      } else {
+        String cleanBaseUrl = baseUrl.replaceAll('/api', '');
+        
+        // Handle cases where the path might contain an absolute Windows path (C:\...)
+        if (normalizedPath.contains(':/')) {
+          int uploadsIdx = normalizedPath.indexOf('/uploads/');
+          if (uploadsIdx != -1) {
+            normalizedPath = normalizedPath.substring(uploadsIdx);
+          }
+        }
+
+        // Ensure proper slash formatting between base and path
+        if (!normalizedPath.startsWith('/') && !cleanBaseUrl.endsWith('/')) {
+          url = '$cleanBaseUrl/$normalizedPath';
+        } else if (normalizedPath.startsWith('/') && cleanBaseUrl.endsWith('/')) {
+           url = cleanBaseUrl + normalizedPath.substring(1);
+        } else {
+          url = '$cleanBaseUrl$normalizedPath';
+        }
+      }
       
       final response = await http.get(
         Uri.parse(Uri.encodeFull(url)),
@@ -1296,7 +1345,7 @@ class ApiService {
         final File file = File('${dir.path}/$finalFileName');
         await file.writeAsBytes(response.bodyBytes);
         
-        if (context != null && ['txt', 'docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls'].contains(finalFileName.split('.').last.toLowerCase())) {
+        if (context != null && ['txt', 'docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls', 'pdf', 'jpg', 'jpeg', 'png', 'gif', 'bmp'].contains(finalFileName.split('.').last.toLowerCase())) {
           if (!context.mounted) return;
           Navigator.push(
             context,

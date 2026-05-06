@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_pdfview/flutter_pdfview.dart';
 import '../widgets/custom_microsoft_viewer.dart';
 
 class FileViewerScreen extends StatefulWidget {
@@ -78,6 +79,8 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
   Widget build(BuildContext context) {
     final ext = widget.fileName.split('.').last.toLowerCase();
     final isMicrosoftSupported = ['docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls'].contains(ext);
+    final isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp'].contains(ext);
+    final isPdf = ext == 'pdf';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC), // Use a light grey theme consistent with the app
@@ -114,7 +117,51 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
                   ? SizedBox.expand(
                       child: CustomMicrosoftViewer(fileBytes!),
                     )
-                  : const Center(child: Text("Unsupported file format for internal viewer.")),
+                  : isImage
+                      ? _buildImageViewer()
+                      : isPdf
+                          ? _buildPdfViewer()
+                          : const Center(child: Text("Unsupported file format for internal viewer.")),
+    );
+  }
+
+  Widget _buildImageViewer() {
+    return SizedBox.expand(
+      child: InteractiveViewer(
+        boundaryMargin: const EdgeInsets.all(20),
+        minScale: 1.0,
+        maxScale: 5.0,
+        child: Center(
+          child: Image.file(
+            File(widget.filePath),
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => const Center(child: Text("Could not load image")),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPdfViewer() {
+    return PDFView(
+      filePath: widget.filePath,
+      enableSwipe: true,
+      swipeHorizontal: false,
+      autoSpacing: false,
+      pageFling: true,
+      pageSnap: true,
+      defaultPage: 0,
+      fitPolicy: FitPolicy.BOTH,
+      preventLinkNavigation: false,
+      onRender: (pages) {
+        debugPrint("PDF Rendered with $pages pages");
+      },
+      onError: (error) {
+        debugPrint("PDF Error: $error");
+      },
+      onPageError: (page, error) {
+        debugPrint("PDF Page Error on $page: $error");
+      },
     );
   }
 }

@@ -15,6 +15,7 @@ import 'course_details_screen.dart';
 import 'instructor_storage_explorer_screen.dart';
 import 'instructor_menu_screen.dart';
 import 'system_messages_screen.dart';
+import 'academic_calendar_screen.dart';
 
 
 class InstructorHomeScreen extends StatefulWidget {
@@ -737,7 +738,7 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
           Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorGroupsScreen()));
         }),
         _buildIconBtn(Icons.calendar_month_rounded, "Calendar", const Color(0xFFFFFDE7), Colors.amber, () {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Calendar coming soon!")));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const AcademicCalendarScreen()));
         }),
         _buildIconBtn(Icons.more_horiz_rounded, "More", Colors.grey.shade200, Colors.grey.shade700, () {
           Navigator.push(context, MaterialPageRoute(builder: (context) => InstructorMenuScreen(courses: _courses)));

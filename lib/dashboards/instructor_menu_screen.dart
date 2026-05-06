@@ -10,6 +10,7 @@ import 'help_support_screen.dart';
 import 'account_settings_screen.dart';
 import 'course_details_screen.dart';
 import 'instructor_files_screen.dart';
+import 'academic_calendar_screen.dart';
 
 class InstructorMenuScreen extends StatefulWidget {
   final List<dynamic> courses;
@@ -73,7 +74,7 @@ class _InstructorMenuScreenState extends State<InstructorMenuScreen> {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorGroupsScreen()));
                 }),
                 _buildMenuIcon(Icons.calendar_month_rounded, "Calendar", const Color(0xFFFFFDE7), Colors.amber, () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Calendar coming soon!")));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const AcademicCalendarScreen()));
                 }),
                 _buildMenuIcon(Icons.download_rounded, "Downloads", const Color(0xFFE1F5FE), Colors.lightBlue, () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorFilesScreen(showToggle: false, startInDownloads: true)));

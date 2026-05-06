@@ -45,6 +45,7 @@ dependencies:
   archive: ^4.0.9
   xml: ^6.6.1
   collection: ^1.19.1
+  flutter_pdfview: ^1.4.4
 
 dev_dependencies:
   flutter_test:
