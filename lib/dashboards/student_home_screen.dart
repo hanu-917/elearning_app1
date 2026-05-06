@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 import 'system_messages_screen.dart';
 import 'student_menu_screen.dart';
 import 'student_courses_screen.dart';
 import '../services/api_service.dart';
-
 
 class StudentHomeScreen extends StatefulWidget {
   const StudentHomeScreen({super.key});
@@ -18,13 +18,16 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   String _firstName = 'Student';
   final ApiService _apiService = ApiService();
   bool _isScheduleLoading = true;
+  bool _isTasksLoading = true;
   List<Map<String, dynamic>> _todaySchedule = [];
+  List<dynamic> _pendingTasks = [];
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
     _fetchTodaySchedule();
+    _fetchPendingTasks();
   }
 
   Future<void> _loadUserData() async {
@@ -51,8 +54,60 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     }
   }
 
+  Future<void> _fetchPendingTasks() async {
+    if (!mounted) return;
+    setState(() => _isTasksLoading = true);
+    try {
+      final tasks = await _apiService.getStudentAssignments();
+      if (mounted) {
+        setState(() {
+          _pendingTasks = tasks;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching tasks: $e");
+    } finally {
+      if (mounted) setState(() => _isTasksLoading = false);
+    }
+  }
+
+  String _getDueString(String dueDateStr) {
+    try {
+      final dueDate = DateTime.parse(dueDateStr);
+      final now = DateTime.now();
+      final difference = dueDate.difference(now);
+
+      if (difference.isNegative) return "Overdue";
+
+      if (difference.inHours < 24) {
+        if (difference.inHours == 0) return "Due in ${difference.inMinutes} mins";
+        return "Due in ${difference.inHours} hrs";
+      }
+
+      if (difference.inDays < 7) {
+        return "Due ${DateFormat('EEEE').format(dueDate)}";
+      }
+
+      return "Due ${DateFormat('MMM d').format(dueDate)}";
+    } catch (e) {
+      return "Due $dueDateStr";
+    }
+  }
+
+  bool _isUrgent(String dueDateStr) {
+    try {
+      final dueDate = DateTime.parse(dueDateStr);
+      final now = DateTime.now();
+      final difference = dueDate.difference(now);
+      return difference.inHours < 24 && !difference.isNegative;
+    } catch (e) {
+      return false;
+    }
+  }
+
   void _processTodaySchedule(List<dynamic> courses, List<dynamic> schedules) {
-    // Collect all course titles and codes that the student is enrolled in
+    // ... existing _processTodaySchedule implementation ...
+    // (I'll keep the original content here)
     final Set<String> myCourseIdentifiers = {};
     for (var course in courses) {
       if (course['title'] != null) myCourseIdentifiers.add(course['title'].toString().toLowerCase());
@@ -169,8 +224,33 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                         const SizedBox(height: 30),
                         const Text("Pending Tasks", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
                         const SizedBox(height: 15),
-                        _buildTaskItem("AI Presentation", "Due in 12 hrs", Colors.orange, true),
-                        _buildTaskItem("Security Assignment", "Due Friday", Colors.blue, false),
+                        if (_isTasksLoading)
+                          const Center(
+                             child: Padding(
+                               padding: EdgeInsets.all(20.0),
+                               child: CircularProgressIndicator(strokeWidth: 3),
+                             ),
+                           )
+                        else if (_pendingTasks.isEmpty)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16)
+                            ),
+                            child: const Center(child: Text("No assignments found", style: TextStyle(color: Colors.grey))),
+                          )
+                        else
+                          ..._pendingTasks.take(5).map((task) {
+                            final bool urgent = _isUrgent(task['due_date'].toString());
+                            return _buildTaskItem(
+                              task['title'].toString(),
+                              _getDueString(task['due_date'].toString()),
+                              urgent ? Colors.orange : Colors.blue,
+                              urgent
+                            );
+                          }),
                       ],
                     ),
                   ),
@@ -182,6 +262,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
       ),
     );
   }
+
 
   Widget _buildHeader() {
     return Container(
