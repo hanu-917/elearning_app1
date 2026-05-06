@@ -2,7 +2,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:io' show Platform;
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:flutter/material.dart';
+import '../dashboards/file_viewer_screen.dart';
 
 class ApiService {
   
@@ -132,7 +136,7 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> uploadMaterial(String courseId, String title, String filePath) async {
+  Future<Map<String, dynamic>> uploadMaterial(String? courseId, String title, String filePath) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
@@ -141,7 +145,9 @@ class ApiService {
 
       var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/materials'));
       request.headers['Authorization'] = 'Bearer $token';
-      request.fields['course_id'] = courseId;
+      if (courseId != null) {
+        request.fields['course_id'] = courseId;
+      }
       request.fields['title'] = title;
 
       request.files.add(await http.MultipartFile.fromPath('file', filePath));
@@ -1104,6 +1110,25 @@ class ApiService {
     }
   }
 
+  Future<void> permanentlyDeleteEntry(String id, String type) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.delete(
+        Uri.parse('$baseUrl/instructor-files/permanent/$type/$id'),
+        headers: {"Authorization": "Bearer $token"},
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode != 200 || data['success'] != true) {
+        throw Exception(data['message'] ?? 'Failed to permanently delete $type');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> profileData) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -1184,6 +1209,80 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Server Error: $e');
+    }
+  }
+
+  Future<bool> isFileDownloaded(String filePath) async {
+    if (filePath.isEmpty) return false;
+    try {
+      Directory dir;
+      if (Platform.isAndroid) {
+        dir = Directory('/storage/emulated/0/Download/ELMS');
+      } else {
+        dir = Directory('${(await getApplicationDocumentsDirectory()).path}/ELMS');
+      }
+      String fileName = filePath.split('/').last;
+      if (fileName.isEmpty || !fileName.contains('.')) return false;
+      final file = File('${dir.path}/$fileName');
+      return await file.exists();
+    } catch (_) {
+      return false;
+    }
+  }
+
+
+  Future<void> downloadAndOpenFile(String filePath, {BuildContext? context}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+
+      String cleanBaseUrl = baseUrl.replaceAll('/api', '');
+      String url = '$cleanBaseUrl$filePath';
+      
+      final response = await http.get(
+        Uri.parse(Uri.encodeFull(url)),
+        headers: token != null ? {"Authorization": "Bearer $token"} : {},
+      ).timeout(const Duration(seconds: 60));
+
+      if (response.statusCode == 200) {
+        Directory dir;
+        if (Platform.isAndroid) {
+          dir = Directory('/storage/emulated/0/Download/ELMS');
+        } else {
+          dir = Directory('${(await getApplicationDocumentsDirectory()).path}/ELMS');
+        }
+        
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
+        }
+        
+        String fileName = filePath.split('/').last;
+        if (fileName.isEmpty || !fileName.contains('.')) {
+          fileName = "file_${DateTime.now().millisecondsSinceEpoch}.bin";
+        }
+        
+        final File file = File('${dir.path}/$fileName');
+        await file.writeAsBytes(response.bodyBytes);
+        
+        if (context != null && ['txt', 'docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls'].contains(fileName.split('.').last.toLowerCase())) {
+          if (!context.mounted) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FileViewerScreen(filePath: file.path, fileName: fileName)
+            ),
+          );
+        } else {
+          final result = await OpenFilex.open(file.path);
+          if (result.type != ResultType.done) {
+            throw Exception(result.message);
+          }
+        }
+      } else {
+        throw Exception("Server returned ${response.statusCode}");
+      }
+    } catch (e) {
+      throw Exception("Could not open file: $e");
     }
   }
 }

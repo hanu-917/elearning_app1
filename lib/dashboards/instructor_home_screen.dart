@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
+import 'dart:async';
 import '../services/api_service.dart';
 import 'instructor_materials_screen.dart';
 import 'instructor_courses_screen.dart';
@@ -33,11 +34,37 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
   bool _isLoadingSchedules = false;
   Map<String, dynamic>? _upcomingClass;
 
+  final PageController _pageController = PageController(viewportFraction: 0.85);
+  Timer? _carouselTimer;
+  int _currentCardIndex = 0;
+
   @override
   void initState() {
     super.initState();
     _loadUserData();
     _initData();
+    _startCarouselTimer();
+  }
+
+  void _startCarouselTimer() {
+    _carouselTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      if (_pageController.hasClients) {
+        int nextPage = _pageController.page!.round() + 1;
+        if (nextPage > 1) { // We have 2 cards, so index 0 and 1
+          nextPage = 0;
+          _pageController.animateToPage(nextPage, duration: const Duration(milliseconds: 800), curve: Curves.easeInOut);
+        } else {
+          _pageController.animateToPage(nextPage, duration: const Duration(milliseconds: 400), curve: Curves.easeIn);
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _carouselTimer?.cancel();
+    _pageController.dispose();
+    super.dispose();
   }
 
   Future<void> _initData() async {
@@ -424,112 +451,25 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
   }
 
   Future<void> _handleDirectUpload() async {
-    if (_courses.isEmpty && !_isLoadingCourses) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(behavior: SnackBarBehavior.floating, content: Text("No courses found. Please ensure you are assigned to at least one course.")));
-      return;
-    }
-
     try {
       FilePickerResult? result = await FilePicker.pickFiles();
       if (result != null) {
         if (!mounted) return;
-        _showCourseSelectionForUpload(result.files.first);
+        PlatformFile selectedFile = result.files.first;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(behavior: SnackBarBehavior.floating, content: Text("Uploading...")));
+        try {
+          await _apiService.uploadMaterial(null, selectedFile.name, selectedFile.path!);
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(behavior: SnackBarBehavior.floating, content: Text("Uploaded Successfully", style: TextStyle(color: Colors.white)), backgroundColor: Colors.green));
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text(e.toString()), backgroundColor: Colors.red));
+          }
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text("Error picking file: $e")));
     }
-  }
-
-  void _showCourseSelectionForUpload(PlatformFile selectedFile) {
-    String? selectedCourseId = _courses.isNotEmpty ? _courses.first['id'] : null;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            bool isUploading = false;
-
-            return Container(
-              padding: EdgeInsets.only(
-                top: 20, left: 20, right: 20, 
-                bottom: MediaQuery.of(context).viewInsets.bottom + 30
-              ),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 20), decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(2)))),
-                  const Text("Finalize Upload", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
-                  const SizedBox(height: 10),
-                  Text("File: ${selectedFile.name}", style: const TextStyle(color: Colors.black54)),
-                  const SizedBox(height: 25),
-                  
-                  // Course Dropdown
-                  const Text("Select Course", style: TextStyle(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 5),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    decoration: BoxDecoration(border: Border.all(color: Colors.black12), borderRadius: BorderRadius.circular(10)),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        value: selectedCourseId,
-                        items: _courses.map((course) {
-                          return DropdownMenuItem<String>(
-                            value: course['id'],
-                            child: Text(course['title'] ?? course['course_code']),
-                          );
-                        }).toList(),
-                        onChanged: (val) => setSheetState(() => selectedCourseId = val),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-
-                  // Upload Button
-                  isUploading 
-                    ? const Center(child: CircularProgressIndicator())
-                    : SizedBox(
-                        width: double.infinity,
-                        height: 55,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF09AEF5),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
-                          ),
-                          onPressed: () async {
-                            if (selectedCourseId == null) return;
-                            
-                            setSheetState(() => isUploading = true);
-                            try {
-                              await _apiService.uploadMaterial(selectedCourseId!, selectedFile.name, selectedFile.path!);
-                              if (!mounted) return;
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(behavior: SnackBarBehavior.floating, content: Text("Uploaded Successfully", style: TextStyle(color: Colors.white)), backgroundColor: Colors.green));
-                            } catch (e) {
-                              if (mounted) {
-                                setSheetState(() => isUploading = false);
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, content: Text(e.toString())));
-                              }
-                            }
-                          },
-                          child: const Text("Upload Now", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                        ),
-                      )
-                ],
-              ),
-            );
-          }
-        );
-      }
-    );
   }
 
 
@@ -587,106 +527,145 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
   }
 
   Widget _buildHorizontalCards(BuildContext context) {
-    double cardWidth = MediaQuery.of(context).size.width * 0.75;
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          // Blue Upcoming Class Card
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const InstructorScheduleScreen()),
-              );
+    return Column(
+      children: [
+        SizedBox(
+          height: 150,
+          child: Listener(
+            onPointerDown: (_) {
+              _carouselTimer?.cancel();
             },
-            child: _buildBaseCard(
-              width: cardWidth,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF42A5F5), Color(0xFF1976D2)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text("Upcoming Class", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  if (_isLoadingSchedules)
-                    const SizedBox(height: 30, width: 30, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  else if (_upcomingClass != null) ...[
-                    if (_upcomingClass!['type'] == 'digital')
-                      Text("${_upcomingClass!['day']} ${_upcomingClass!['time']}", style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold))
-                    else
-                      const Text("Upload Available", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                    
-                    const Spacer(),
-                    Text(_upcomingClass!['type'] == 'digital' ? _upcomingClass!['course'] : _upcomingClass!['title'], 
-                      style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                      overflow: TextOverflow.ellipsis,
+            child: PageView(
+              controller: _pageController,
+              physics: const BouncingScrollPhysics(),
+              onPageChanged: (int index) {
+                setState(() {
+                  _currentCardIndex = index;
+                });
+              },
+              children: [
+          // Blue Upcoming Class Card
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 7.5),
+            child: GestureDetector(
+              onTap: () {
+                _carouselTimer?.cancel();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const InstructorScheduleScreen()),
+                ).then((_) {
+                  _startCarouselTimer();
+                });
+              },
+              child: _buildBaseCard(
+                width: double.infinity,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF42A5F5), Color(0xFF1976D2)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text("Upcoming Class", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+                      ],
                     ),
-                  ] else ...[
-                    const Text("Not Available", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                    const Spacer(),
-                    const Text("Schedule is not available", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 12),
+                    if (_isLoadingSchedules)
+                      const SizedBox(height: 30, width: 30, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    else if (_upcomingClass != null) ...[
+                      if (_upcomingClass!['type'] == 'digital')
+                        Text("${_upcomingClass!['day']} ${_upcomingClass!['time']}", style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold))
+                      else
+                        const Text("Upload Available", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                      
+                      const Spacer(),
+                      Text(_upcomingClass!['type'] == 'digital' ? _upcomingClass!['course'] : _upcomingClass!['title'], 
+                        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ] else ...[
+                      const Text("Not Available", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                      const Spacer(),
+                      const Text("Schedule is not available", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                    ],
+                    const SizedBox(height: 2),
+                    const Text("Tap to view details ›", style: TextStyle(color: Colors.white60, fontSize: 12)),
                   ],
-                  const SizedBox(height: 2),
-                  const Text("Tap to view details ›", style: TextStyle(color: Colors.white60, fontSize: 12)),
-                ],
+                ),
               ),
             ),
           ),
-          
-          const SizedBox(width: 15),
 
           // Action Card for materials
-          GestureDetector(
-            onTap: _handleDirectUpload,
-            child: _buildBaseCard(
-              width: cardWidth,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF26A69A), Color(0xFF00695C)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text("Quick Action", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
-                      SizedBox(height: 8),
-                      Text("Upload", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24)),
-                      Text("Files", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      shape: BoxShape.circle,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 7.5),
+            child: GestureDetector(
+              onTap: () async {
+                _carouselTimer?.cancel();
+                await _handleDirectUpload();
+                _startCarouselTimer();
+              },
+              child: _buildBaseCard(
+                width: double.infinity,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF26A69A), Color(0xFF00695C)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text("Quick Action", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+                        SizedBox(height: 8),
+                        Text("Upload", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24)),
+                        Text("Files", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      ],
                     ),
-                    child: const Icon(Icons.cloud_upload_rounded, color: Colors.white, size: 36),
-                  ),
-                ],
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.cloud_upload_rounded, color: Colors.white, size: 36),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ],
       ),
-    );
-  }
+     ),
+    ),
+    const SizedBox(height: 15),
+    Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(2, (index) {
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          height: 6,
+          width: _currentCardIndex == index ? 24 : 8,
+          decoration: BoxDecoration(
+            color: _currentCardIndex == index ? const Color(0xFF09AEF5) : Colors.grey.shade300,
+            borderRadius: BorderRadius.circular(4),
+          ),
+        );
+      }),
+    ),
+  ],
+);
+}
 
   Widget _buildBaseCard({required double width, Gradient? gradient, required Widget child}) {
     return Container(

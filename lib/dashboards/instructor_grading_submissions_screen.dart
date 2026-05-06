@@ -520,30 +520,65 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.black12),
             ),
-            child: Row(
-              children: [
-                Icon(
-                  fileName.toLowerCase().endsWith('.pdf') ? Icons.picture_as_pdf_rounded : Icons.description_rounded, 
-                  color: fileName.toLowerCase().endsWith('.pdf') ? Colors.redAccent : Colors.blueAccent, 
-                  size: 24
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(fileName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87), overflow: TextOverflow.ellipsis),
-                      const Text("Click to view", style: TextStyle(color: Colors.black54, fontSize: 11)),
-                    ],
+            child: InkWell(
+              onTap: () async {
+                  if (item['file_path'] != null) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening material...")));
+                    try {
+                      await _apiService.downloadAndOpenFile(item['file_path'], context: context);
+                      setState(() {}); // refresh the icon state optionally
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                      }
+                    }
+                  }
+              },
+              child: Row(
+                children: [
+                  FutureBuilder<bool>(
+                    future: item['file_path'] != null ? _apiService.isFileDownloaded(item['file_path']) : Future.value(false),
+                    builder: (context, snapshot) {
+                      IconData defaultIcon = fileName.toLowerCase().endsWith('.pdf') ? Icons.picture_as_pdf_rounded : Icons.description_rounded;
+                      Color defaultColor = fileName.toLowerCase().endsWith('.pdf') ? Colors.redAccent : Colors.blueAccent;
+                      
+                      if (snapshot.connectionState == ConnectionState.done && snapshot.data == false) {
+                        defaultIcon = Icons.download_rounded;
+                        defaultColor = Colors.grey;
+                      }
+                      return Icon(defaultIcon, color: defaultColor, size: 24);
+                    }
                   ),
-                ),
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.remove_red_eye_rounded, color: Color(0xFF05398F)),
-                  constraints: const BoxConstraints(),
-                  padding: EdgeInsets.zero,
-                )
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(fileName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87), overflow: TextOverflow.ellipsis),
+                        const Text("Click to view", style: TextStyle(color: Colors.black54, fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () async {
+                      if (item['file_path'] != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening material...")));
+                        try {
+                          await _apiService.downloadAndOpenFile(item['file_path'], context: context);
+                          setState(() {});
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                          }
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.remove_red_eye_rounded, color: Color(0xFF05398F)),
+                    constraints: const BoxConstraints(),
+                    padding: EdgeInsets.zero,
+                  )
+                ],
+              ),
             ),
           ),
           const SizedBox(height: 16),

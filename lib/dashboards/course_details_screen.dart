@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import 'instructor_materials_screen.dart';
@@ -111,15 +110,12 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     final urlStr = _currentCourse['course_guide_url'];
     if (urlStr == null) return;
     
-    // Normalize URL
-    String baseUrl = ApiService.baseUrl.replaceAll('/api', '');
-    final uri = Uri.parse('$baseUrl$urlStr');
-    
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening guide...")));
+    try {
+      await _apiService.downloadAndOpenFile(urlStr, context: context);
+    } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Could not open guide.")));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -390,7 +386,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         if (_selectedIds.isNotEmpty) {
           _toggleSelection(mId);
         } else {
-          // Open material logic
+          _openMaterial(material);
         }
       },
       onLongPress: () {
@@ -408,10 +404,19 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
               color: isSelected ? widget.themeColor : widget.themeColor.withOpacity(0.1), 
               borderRadius: BorderRadius.circular(10)
             ),
-            child: Icon(
-              isSelected ? Icons.check_rounded : Icons.description_rounded, 
-              color: isSelected ? Colors.white : widget.themeColor, 
-              size: 20
+            child: FutureBuilder<bool>(
+              future: material['file_path'] != null ? _apiService.isFileDownloaded(material['file_path']) : Future.value(false),
+              builder: (context, snapshot) {
+                IconData defaultIcon = Icons.description_rounded;
+                if (snapshot.connectionState == ConnectionState.done && snapshot.data == false && !_isInstructor) {
+                  defaultIcon = Icons.download_rounded;
+                }
+                return Icon(
+                  isSelected ? Icons.check_rounded : defaultIcon, 
+                  color: isSelected ? Colors.white : widget.themeColor, 
+                  size: 20
+                );
+              }
             ),
           ),
           title: Text(material['title'] ?? '', 
@@ -427,6 +432,21 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _openMaterial(dynamic material) async {
+    final urlStr = material['file_path'];
+    if (urlStr == null) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("File not found")));
+      return;
+    }
+    
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening material...")));
+    try {
+      await _apiService.downloadAndOpenFile(urlStr, context: context);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
   }
 
   void _toggleSelection(String id) {

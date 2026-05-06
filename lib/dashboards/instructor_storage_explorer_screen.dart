@@ -834,6 +834,8 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
           _toggleSelection("${type}:${item['id']}", isSystem: isUploads);
         } else if (type == 'folder') {
           _navigateToFolder(item['id'].toString(), name);
+        } else if (type == 'file') {
+          _openFile(item);
         }
       },
       onLongPress: () => _toggleSelection("${type}:${item['id']}", isSystem: isUploads),
@@ -884,6 +886,21 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
         ),
       ),
     );
+  }
+
+  Future<void> _openFile(dynamic fileItem) async {
+    final urlStr = fileItem['file_path'] ?? fileItem['url'];
+    if (urlStr == null) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("File not found")));
+      return;
+    }
+    
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening file...")));
+    try {
+      await _apiService.downloadAndOpenFile(urlStr, context: context);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
   }
 
   IconData _getIcon(String name, String type) {
