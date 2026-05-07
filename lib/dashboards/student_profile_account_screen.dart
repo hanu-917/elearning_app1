@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:elearning_app/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StudentProfileAccountScreen extends StatefulWidget {
@@ -12,6 +13,7 @@ class _StudentProfileAccountScreenState extends State<StudentProfileAccountScree
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _groupNameController = TextEditingController();
   String _studentId = '';
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -28,15 +30,36 @@ class _StudentProfileAccountScreenState extends State<StudentProfileAccountScree
     });
   }
 
+  final ApiService _apiService = ApiService();
+
   Future<void> _saveData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('username', _usernameController.text);
-    await prefs.setString('group_name', _groupNameController.text);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Account details updated successfully!')),
-      );
-      Navigator.pop(context);
+    setState(() => _isLoading = true);
+    try {
+      final Map<String, dynamic> data = {
+        'username': _usernameController.text.trim(),
+        'group_name': _groupNameController.text.trim(),
+      };
+
+      await _apiService.updateProfile(data);
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('username', _usernameController.text);
+      await prefs.setString('group_name', _groupNameController.text);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Request sent to admin successfully!'), backgroundColor: Colors.green),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -74,7 +97,7 @@ class _StudentProfileAccountScreenState extends State<StudentProfileAccountScree
                 minimumSize: const Size(double.infinity, 55),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
-              child: const Text("Save Changes", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              child: const Text("Request Admin Approval", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
