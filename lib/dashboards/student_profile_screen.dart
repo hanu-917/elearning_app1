@@ -4,8 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart'; 
 import '../auth/welcome_screen.dart';
-import 'student_profile_account_screen.dart';
-import 'student_profile_downloads_screen.dart';
 import 'student_profile_settings_screen.dart';
 import 'help_support_screen.dart';
 

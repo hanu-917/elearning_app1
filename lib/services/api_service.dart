@@ -1580,6 +1580,85 @@ class ApiService {
     }
   }
 
+  Future<Map<String, int>> getUnreadNotificationCounts() async {
+    try {
+      // Count unread push-notifications by type.
+      // NOTE: 'system' typed push-notifications are intentionally skipped here
+      // because admin broadcast messages are already counted exclusively via
+      // _getUnseenSystemMessageCount() below. Counting them in both places
+      // caused every admin message to appear twice in the badge count.
+      final notifications = await getNotifications();
+      final counts = <String, int>{
+        'chat': 0,
+        'announcement': 0,
+        'material': 0,
+        'task': 0,
+        'system': 0,
+        'total': 0,
+      };
+      for (final n in notifications) {
+        if (n['is_read'] == true) continue;
+        final type = (n['type'] ?? '').toString();
+        // Skip 'system' push-notifications — they duplicate the system_messages table count
+        if (type == 'system') continue;
+        counts['total'] = (counts['total'] ?? 0) + 1;
+        if (type == 'chat') {
+          counts['chat'] = (counts['chat'] ?? 0) + 1;
+        } else if (type == 'announcement') {
+          counts['announcement'] = (counts['announcement'] ?? 0) + 1;
+        } else if (type == 'material' || type == 'task') {
+          counts['material'] = (counts['material'] ?? 0) + 1;
+        }
+      }
+
+      // Count unseen admin system-broadcast messages (the sole source of 'system' badge count)
+      final systemMsgCount = await _getUnseenSystemMessageCount();
+      counts['system'] = systemMsgCount;
+      counts['total'] = (counts['total'] ?? 0) + systemMsgCount;
+
+      return counts;
+    } catch (e) {
+      return {'chat': 0, 'announcement': 0, 'material': 0, 'system': 0, 'total': 0};
+    }
+  }
+
+
+  /// Returns how many admin system-broadcast messages the user has NOT yet opened.
+  /// Uses the same SharedPreferences key as SystemNotificationsScreen so they stay in sync.
+  static const _openedIdsKey = 'system_notifications_opened_ids';
+
+  Future<int> _getUnseenSystemMessageCount() async {
+    try {
+      final messages = await getSystemMessages();
+      final prefs = await SharedPreferences.getInstance();
+      final openedIds = (prefs.getStringList(_openedIdsKey) ?? []).toSet();
+      int unseen = 0;
+      for (final m in messages) {
+        final id = m['id']?.toString() ?? m['created_at']?.toString() ?? '';
+        if (!openedIds.contains(id)) unseen++;
+      }
+      return unseen;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  /// Marks ALL system-broadcast messages as opened, clearing the badge.
+  Future<void> markSystemMessagesSeen() async {
+    try {
+      final messages = await getSystemMessages();
+      final prefs = await SharedPreferences.getInstance();
+      final ids = messages
+          .map((m) => m['id']?.toString() ?? m['created_at']?.toString() ?? '')
+          .where((id) => id.isNotEmpty)
+          .toList();
+      final existing = (prefs.getStringList(_openedIdsKey) ?? []).toSet();
+      existing.addAll(ids);
+      await prefs.setStringList(_openedIdsKey, existing.toList());
+    } catch (_) {}
+  }
+
+
   // ========================
   // Support Tickets
   // ========================

@@ -24,7 +24,9 @@ class _SystemMessagesScreenState extends State<SystemMessagesScreen> {
     setState(() => _isLoading = true);
     try {
       final messages = await _apiService.getSystemMessages();
-      setState(() => _messages = messages);
+      // Mark as seen so the dashboard badge clears
+      await _apiService.markSystemMessagesSeen();
+      if (mounted) setState(() => _messages = messages);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

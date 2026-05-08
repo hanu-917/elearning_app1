@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-import 'system_messages_screen.dart';
-import 'notifications_screen.dart';
+import 'system_notifications_screen.dart';
 import 'student_menu_screen.dart';
 import 'student_courses_screen.dart';
 import 'chat_detail_screen.dart';
@@ -29,6 +28,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   List<dynamic> _pendingTasks = [];
   List<dynamic> _courses = [];
   bool _isLoadingCourses = true;
+  int _systemUnread = 0;
 
   @override
   void initState() {
@@ -36,6 +36,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     _loadUserData();
     _fetchTodaySchedule();
     _fetchPendingTasks();
+    _fetchSystemUnread();
+  }
+
+  Future<void> _fetchSystemUnread() async {
+    try {
+      final counts = await _apiService.getUnreadNotificationCounts();
+      if (mounted) setState(() => _systemUnread = counts['system'] ?? 0);
+    } catch (_) {}
   }
 
   Future<void> _loadUserData() async {
@@ -312,20 +320,42 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             ),
           ),
           GestureDetector(
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsScreen()));
+            onTap: () async {
+              await Navigator.push(context, MaterialPageRoute(builder: (context) => const SystemNotificationsScreen()));
+              // Refresh badge after returning
+              _fetchSystemUnread();
             },
-            child: Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                 color: Colors.white24,
-                 shape: BoxShape.circle,
-              ),
-              child: const CircleAvatar(
-                backgroundColor: Colors.white, 
-                radius: 22,
-                child: Icon(Icons.notifications_none_rounded, color: Color(0xFF05398F), size: 24),
-              ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                     color: Colors.white24,
+                     shape: BoxShape.circle,
+                  ),
+                  child: const CircleAvatar(
+                    backgroundColor: Colors.white,
+                    radius: 22,
+                    child: Icon(Icons.notifications_none_rounded, color: Color(0xFF05398F), size: 24),
+                  ),
+                ),
+                if (_systemUnread > 0)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                      decoration: const BoxDecoration(color: Colors.redAccent, shape: BoxShape.circle),
+                      child: Text(
+                        _systemUnread > 99 ? '99+' : '$_systemUnread',
+                        style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
 
