@@ -29,10 +29,11 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
   final ApiService _apiService = ApiService();
   String _title = '';
   String _firstName = '';
+  bool _isUserDataLoading = true;
   List<dynamic> _courses = [];
   bool _isLoadingCourses = false;
   List<dynamic> _schedules = [];
-  bool _isLoadingSchedules = false;
+  bool _isLoadingSchedules = true;
   Map<String, dynamic>? _upcomingClass;
 
   int _systemUnread = 0;
@@ -214,11 +215,14 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
 
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _title = prefs.getString('title') ?? '';
-      if (_title == 'None') _title = '';
-      _firstName = prefs.getString('first_name') ?? '';
-    });
+    if (mounted) {
+      setState(() {
+        _title = prefs.getString('title') ?? '';
+        if (_title == 'None') _title = '';
+        _firstName = prefs.getString('first_name') ?? '';
+        _isUserDataLoading = false;
+      });
+    }
   }
 
   @override
@@ -524,7 +528,22 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Hello, $_title $_firstName".trim(), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5), overflow: TextOverflow.ellipsis, maxLines: 1),
+                if (_isUserDataLoading)
+                  Container(
+                    height: 26,
+                    width: 160,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  )
+                else
+                  Text(
+                    "Hello, ${_title.isNotEmpty ? '$_title ' : ''}$_firstName".trim(),
+                    style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 const SizedBox(height: 4),
                 const Text("Welcome to BDU ELMS", style: TextStyle(color: Colors.white70, fontSize: 14)),
               ],

@@ -14,6 +14,7 @@ class _StudentProfileAccountScreenState extends State<StudentProfileAccountScree
   final TextEditingController _groupNameController = TextEditingController();
   String _studentId = '';
   bool _isLoading = false;
+  bool _isDataLoaded = false;
 
   @override
   void initState() {
@@ -23,11 +24,14 @@ class _StudentProfileAccountScreenState extends State<StudentProfileAccountScree
 
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _studentId = prefs.getString('institutional_id') ?? '';
-      _usernameController.text = prefs.getString('username') ?? '';
-      _groupNameController.text = prefs.getString('group_name') ?? '';
-    });
+    if (mounted) {
+      setState(() {
+        _studentId = prefs.getString('institutional_id') ?? '';
+        _usernameController.text = prefs.getString('username') ?? '';
+        _groupNameController.text = prefs.getString('group_name') ?? '';
+        _isDataLoaded = true;
+      });
+    }
   }
 
   final ApiService _apiService = ApiService();
@@ -65,6 +69,12 @@ class _StudentProfileAccountScreenState extends State<StudentProfileAccountScree
 
   @override
   Widget build(BuildContext context) {
+    if (!_isDataLoaded) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF4F7FC),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
       appBar: AppBar(

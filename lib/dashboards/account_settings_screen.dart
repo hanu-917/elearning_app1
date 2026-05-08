@@ -29,21 +29,23 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     super.didChangeDependencies();
     if (_isInit) {
       _loadInitialData();
-      _isInit = false;
     }
   }
 
   Future<void> _loadInitialData() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _userRole = prefs.getString('user_role') ?? 'student';
-      _selectedTitle = prefs.getString('title');
-      _titleController = TextEditingController(text: _selectedTitle ?? '');
-      _firstNameController = TextEditingController(text: prefs.getString('first_name') ?? '');
-      _middleNameController = TextEditingController(text: prefs.getString('middle_name') ?? '');
-      _lastNameController = TextEditingController(text: prefs.getString('last_name') ?? '');
-      _emailController = TextEditingController(text: prefs.getString('email') ?? '');
-    });
+    if (mounted) {
+      setState(() {
+        _userRole = prefs.getString('user_role') ?? 'student';
+        _selectedTitle = prefs.getString('title');
+        _titleController = TextEditingController(text: _selectedTitle ?? '');
+        _firstNameController = TextEditingController(text: prefs.getString('first_name') ?? '');
+        _middleNameController = TextEditingController(text: prefs.getString('middle_name') ?? '');
+        _lastNameController = TextEditingController(text: prefs.getString('last_name') ?? '');
+        _emailController = TextEditingController(text: prefs.getString('email') ?? '');
+        _isInit = false;
+      });
+    }
   }
 
   @override

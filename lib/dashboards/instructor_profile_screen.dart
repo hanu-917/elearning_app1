@@ -23,6 +23,7 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen> {
   String _email = '';
   String _institutionalId = '';
   String? _profileImagePath;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -32,16 +33,19 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen> {
 
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _title = prefs.getString('title') ?? '';
-      if (_title == 'None') _title = '';
-      _firstName = prefs.getString('first_name') ?? '';
-      _middleName = prefs.getString('middle_name') ?? '';
-      _lastName = prefs.getString('last_name') ?? '';
-      _email = prefs.getString('email') ?? '';
-      _institutionalId = prefs.getString('institutional_id') ?? 'N/A';
-      _profileImagePath = prefs.getString('profile_image_path');
-    });
+    if (mounted) {
+      setState(() {
+        _title = prefs.getString('title') ?? '';
+        if (_title == 'None') _title = '';
+        _firstName = prefs.getString('first_name') ?? '';
+        _middleName = prefs.getString('middle_name') ?? '';
+        _lastName = prefs.getString('last_name') ?? '';
+        _email = prefs.getString('email') ?? '';
+        _institutionalId = prefs.getString('institutional_id') ?? 'N/A';
+        _profileImagePath = prefs.getString('profile_image_path');
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _pickImage() async {
@@ -152,25 +156,50 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen> {
 
             const SizedBox(height: 20),
             
-            Text("${_title.isNotEmpty ? '$_title ' : ''}$_firstName $_middleName $_lastName".replaceAll(RegExp(r'\s+'), ' ').trim(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.black87)),
+            if (_isLoading)
+               Container(
+                 margin: const EdgeInsets.symmetric(vertical: 10),
+                 height: 30,
+                 width: 200,
+                 decoration: BoxDecoration(
+                   color: Colors.grey.shade200,
+                   borderRadius: BorderRadius.circular(8),
+                 ),
+               )
+            else
+              Text("${_title.isNotEmpty ? '$_title ' : ''}$_firstName $_middleName $_lastName".replaceAll(RegExp(r'\s+'), ' ').trim(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.black87)),
+            
             const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF09AEF5).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(20),
+            
+            if (_isLoading)
+              Container(
+                 margin: const EdgeInsets.symmetric(vertical: 5),
+                 height: 20,
+                 width: 150,
+                 decoration: BoxDecoration(
+                   color: Colors.grey.shade200,
+                   borderRadius: BorderRadius.circular(8),
+                 ),
+               )
+            else ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF09AEF5).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  _email,
+                  style: const TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold, fontSize: 13)
+                ),
               ),
-              child: Text(
-                _email,
-                style: const TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold, fontSize: 13)
-              ),
-            ),
-            const SizedBox(height: 4),
-            if (_institutionalId.isNotEmpty && _institutionalId != 'N/A')
-              Text(
-                "ID: $_institutionalId",
-                style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w500, fontSize: 13)
-              ),
+              const SizedBox(height: 4),
+              if (_institutionalId.isNotEmpty && _institutionalId != 'N/A')
+                Text(
+                  "ID: $_institutionalId",
+                  style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w500, fontSize: 13)
+                ),
+            ],
 
             const SizedBox(height: 40),
 

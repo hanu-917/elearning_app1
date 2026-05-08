@@ -21,6 +21,7 @@ class StudentHomeScreen extends StatefulWidget {
 class _StudentHomeScreenState extends State<StudentHomeScreen> {
   String _title = '';
   String _firstName = '';
+  bool _isUserDataLoading = true;
   final ApiService _apiService = ApiService();
   bool _isScheduleLoading = true;
   bool _isTasksLoading = true;
@@ -48,11 +49,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
 
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _title = prefs.getString('title') ?? '';
-      if (_title == 'None') _title = '';
-      _firstName = prefs.getString('first_name') ?? '';
-    });
+    if (mounted) {
+      setState(() {
+        _title = prefs.getString('title') ?? '';
+        if (_title == 'None') _title = '';
+        _firstName = prefs.getString('first_name') ?? '';
+        _isUserDataLoading = false;
+      });
+    }
   }
 
   Future<void> _fetchTodaySchedule() async {
@@ -309,11 +313,21 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Hi, ${_title.isNotEmpty ? '$_title ' : ''}$_firstName".trim(), 
-                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
+                if (_isUserDataLoading)
+                  Container(
+                    height: 26,
+                    width: 160,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  )
+                else
+                  Text("Hi, ${_title.isNotEmpty ? '$_title ' : ''}$_firstName".trim(), 
+                    style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 const SizedBox(height: 4),
                 const Text("Let's start learning!", style: TextStyle(color: Colors.white70, fontSize: 14)),
               ],
