@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'student_profile_ask_question_screen.dart';
 
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
@@ -42,6 +43,9 @@ class HelpSupportScreen extends StatelessWidget {
             const SizedBox(height: 15),
             _buildContactTile(Icons.email_outlined, "Email Admin", "admin@bdu.edu.et", () {}),
             _buildContactTile(Icons.phone_in_talk_rounded, "Call Admin", "+251 911 234 567", () {}),
+            _buildContactTile(Icons.question_answer_rounded, "Ask a Question", "Any questions or concerns? Ask us!", () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileAskQuestionScreen()));
+            }),
             
             const SizedBox(height: 30),
             const Center(

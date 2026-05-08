@@ -1,11 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart'; 
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart'; 
 import '../auth/welcome_screen.dart';
 import 'student_profile_account_screen.dart';
 import 'student_profile_downloads_screen.dart';
 import 'student_profile_settings_screen.dart';
 import 'help_support_screen.dart';
-import 'student_profile_ask_question_screen.dart';
+
 
 class StudentProfileScreen extends StatefulWidget {
   const StudentProfileScreen({super.key});
@@ -21,6 +24,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   String _lastName = '';
   String _email = '';
   String _institutionalId = '';
+  String? _profileImagePath;
 
   @override
   void initState() {
@@ -33,12 +37,41 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
     setState(() {
       _title = prefs.getString('title') ?? '';
       if (_title == 'None') _title = '';
-      _firstName = prefs.getString('first_name') ?? 'Student';
+      _firstName = prefs.getString('first_name') ?? '';
       _middleName = prefs.getString('middle_name') ?? '';
       _lastName = prefs.getString('last_name') ?? '';
-      _email = prefs.getString('email') ?? 'student@bdu.edu.et';
+      _email = prefs.getString('email') ?? '';
       _institutionalId = prefs.getString('institutional_id') ?? 'N/A';
+      _profileImagePath = prefs.getString('profile_image_path');
     });
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png'],
+      );
+      if (result != null && result.files.single.path != null) {
+        final File file = File(result.files.single.path!);
+        final directory = await getApplicationDocumentsDirectory();
+        final String fileName = 'profile_picture_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final File localImage = await file.copy('${directory.path}/$fileName');
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('profile_image_path', localImage.path);
+
+        setState(() {
+          _profileImagePath = localImage.path;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking image: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -74,39 +107,46 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                         )
                       ]
                     ),
-                    child: const CircleAvatar(
+                    child: CircleAvatar(
                       radius: 65,
                       backgroundColor: Colors.white,
                       child: CircleAvatar(
                         radius: 60,
-                        backgroundColor: Color(0xFFE3F2FD), // Profile placeholder
-                        child: Icon(Icons.person_outline_rounded, size: 70, color: Color(0xFF09AEF5)),
+                        backgroundColor: const Color(0xFFE3F2FD), // Profile placeholder
+                        backgroundImage: _profileImagePath != null ? FileImage(File(_profileImagePath!)) : null,
+                        child: _profileImagePath == null
+                            ? const Icon(Icons.person_rounded, size: 70, color: Color(0xFF09AEF5))
+                            : null,
                       ),
                     ),
                   ),
                   Positioned(
                     bottom: 0,
                     right: 4,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF09AEF5), Color(0xFF05398F)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                      child: InkWell(
+                        onTap: _pickImage,
+                        borderRadius: BorderRadius.circular(30),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF09AEF5), Color(0xFF05398F)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 3),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              )
+                            ]
+                          ),
+                          child: const Icon(Icons.edit_rounded, color: Colors.white, size: 18),
                         ),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          )
-                        ]
                       ),
-                      child: const Icon(Icons.edit_rounded, color: Colors.white, size: 18),
-                    ),
                   ),
                 ],
               ),
@@ -141,22 +181,16 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _buildProfileOption(Icons.person_rounded, "Account", Colors.blue, onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileAccountScreen()));
-                  }),
-                  _buildProfileOption(Icons.download_rounded, "Downloads", Colors.green, subtitle: "Manage download memory usage limit", onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileDownloadsScreen()));
-                  }),
                   _buildProfileOption(Icons.settings_rounded, "Settings", Colors.grey.shade700, onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileSettingsScreen()));
                   }),
                   _buildProfileOption(Icons.security_rounded, "Privacy and Security", Colors.red, onTap: () {}),
-                  _buildProfileOption(Icons.help_outline_rounded, "Support and Help (FAQ)", Colors.purple, onTap: () {
+                  _buildProfileOption(Icons.help_outline_rounded, "Help Center", Colors.purple, onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
                   }),
-                  _buildProfileOption(Icons.question_answer_rounded, "Ask a Question", Colors.orange, onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileAskQuestionScreen()));
-                  }),
+                  _buildProfileOption(Icons.feedback_outlined, "Send Feedback", Colors.teal, onTap: () {}),
+                  _buildProfileOption(Icons.info_outline_rounded, "About ELMS", Colors.blueGrey, onTap: () {}),
+
                 ],
               ),
             ),

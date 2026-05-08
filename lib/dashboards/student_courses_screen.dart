@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'course_details_screen.dart';
+import 'student_all_courses_screen.dart';
+import 'student_assignments_screen.dart';
+import 'student_grades_screen.dart';
+import 'student_schedule_screen.dart';
+import 'student_materials_screen.dart';
 
 class StudentCoursesScreen extends StatefulWidget {
   const StudentCoursesScreen({super.key});
@@ -72,12 +77,7 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 10),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _buildOverviewCard(),
-                ),
-                const SizedBox(height: 35),
+                const SizedBox(height: 20),
                 
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -92,14 +92,21 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                           color: Color(0xFF05398F),
                         ),
                       ),
-                      TextButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("All courses are displayed in the list below.")),
-                          );
-                        },
-                        child: const Text("See All", style: TextStyle(color: Color(0xFF09AEF5), fontWeight: FontWeight.bold)),
-                      ),
+                      if (_courses.length > 3)
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      StudentAllCoursesScreen(courses: _courses)),
+                            );
+                          },
+                          child: const Text("See All",
+                              style: TextStyle(
+                                  color: Color(0xFF09AEF5),
+                                  fontWeight: FontWeight.bold)),
+                        ),
                     ],
                   ),
                 ),
@@ -117,7 +124,7 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                       scrollDirection: Axis.horizontal,
                       physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      itemCount: _courses.length,
+                      itemCount: _courses.length > 3 ? 3 : _courses.length,
                       itemBuilder: (context, index) {
                         final course = _courses[index];
                         final colorIndex = index % _cardColors.length;
@@ -145,17 +152,49 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                     children: [
                       Row(
                         children: [
-                          Expanded(child: _buildActionChip("Assignments", Icons.assignment_turned_in_rounded, const Color(0xFF2E7D32), const Color(0xFF66BB6A))),
+                          Expanded(
+                            child: _buildActionChip(
+                              "Assessments", 
+                              Icons.assignment_turned_in_rounded, 
+                              const Color(0xFF2E7D32), 
+                              const Color(0xFF66BB6A),
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentAssignmentsScreen())),
+                            ),
+                          ),
                           const SizedBox(width: 15),
-                          Expanded(child: _buildActionChip("Grades", Icons.military_tech_rounded, const Color(0xFFFF8F00), const Color(0xFFFFCA28))),
+                          Expanded(
+                            child: _buildActionChip(
+                              "Grades", 
+                              Icons.military_tech_rounded, 
+                              const Color(0xFFFF8F00), 
+                              const Color(0xFFFFCA28),
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentGradesScreen())),
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 15),
                       Row(
                         children: [
-                          Expanded(child: _buildActionChip("Schedule", Icons.calendar_month_rounded, const Color(0xFF05398F), const Color(0xFF09AEF5))),
+                          Expanded(
+                            child: _buildActionChip(
+                              "Schedule", 
+                              Icons.calendar_month_rounded, 
+                              const Color(0xFF05398F), 
+                              const Color(0xFF09AEF5),
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentScheduleScreen())),
+                            ),
+                          ),
                           const SizedBox(width: 15),
-                          Expanded(child: _buildActionChip("Discussions", Icons.forum_rounded, const Color(0xFF6A1B9A), const Color(0xFFAB47BC))),
+                          Expanded(
+                            child: _buildActionChip(
+                              "Materials", 
+                              Icons.folder_shared_rounded, 
+                              const Color(0xFF6A1B9A), 
+                              const Color(0xFFAB47BC),
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentMaterialsScreen())),
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -165,51 +204,6 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
               ],
             ),
           ),
-    );
-  }
-
-  String _getSemester() {
-    final month = DateTime.now().month;
-    final year = DateTime.now().year;
-    return (month >= 1 && month <= 6) ? "Spring $year" : "Fall $year";
-  }
-
-  Widget _buildOverviewCard() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF05398F), Color(0xFF09AEF5)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(color: const Color(0xFF09AEF5).withOpacity(0.35), blurRadius: 20, offset: const Offset(0, 10)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
-                  child: Text(_getSemester(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12)),
-                ),
-                const SizedBox(height: 16),
-                const Text("Welcome Back!", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text("You are enrolled in ${_courses.length} courses.", style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 14)),
-              ],
-            ),
-          ),
-          const SizedBox(width: 20),
-          const Icon(Icons.school_rounded, color: Colors.white, size: 60),
-        ],
-      ),
     );
   }
 
@@ -299,7 +293,7 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
     return Icons.menu_book_rounded;
   }
 
-  Widget _buildActionChip(String label, IconData icon, Color darkColor, Color lightColor) {
+  Widget _buildActionChip(String label, IconData icon, Color darkColor, Color lightColor, {VoidCallback? onTap}) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -311,13 +305,13 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () {
+          onTap: onTap ?? () {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text("$label feature coming soon.")),
             );
           },
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
             child: Row(
               children: [
                 Container(
@@ -325,11 +319,11 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                   decoration: BoxDecoration(color: lightColor.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
                   child: Icon(icon, color: darkColor, size: 24),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     label,
-                    style: TextStyle(color: Colors.blueGrey.shade800, fontWeight: FontWeight.bold, fontSize: 15),
+                    style: TextStyle(color: Colors.blueGrey.shade800, fontWeight: FontWeight.bold, fontSize: 14),
                   ),
                 ),
               ],

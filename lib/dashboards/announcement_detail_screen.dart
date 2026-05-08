@@ -554,10 +554,17 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
             color: const Color(0xFF09AEF5).withOpacity(0.05),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            _getIconForType(type),
-            color: const Color(0xFF09AEF5),
-            size: 26,
+          child: FutureBuilder<bool>(
+            future: path.isNotEmpty ? _apiService.isFileDownloaded(path) : Future.value(false),
+            builder: (context, snapshot) {
+              IconData currentIcon = _getIconForType(type);
+              Color currentColor = const Color(0xFF09AEF5);
+              if (snapshot.connectionState == ConnectionState.done && snapshot.data == false) {
+                currentIcon = Icons.download_rounded;
+                currentColor = Colors.grey;
+              }
+              return Icon(currentIcon, color: currentColor, size: 26);
+            }
           ),
         ),
         title: Text(
@@ -592,10 +599,10 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
               color: Color(0xFF05398F),
               size: 20,
             ),
-            onPressed: () => _launchURL(context, fileUrl),
+            onPressed: () => _launchURL(context, fileUrl, name),
           ),
         ),
-        onTap: () => _launchURL(context, fileUrl),
+        onTap: () => _launchURL(context, fileUrl, name),
       ),
     );
   }
@@ -611,14 +618,14 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
     return Icons.insert_drive_file_rounded;
   }
 
-  Future<void> _launchURL(BuildContext context, String url) async {
+  Future<void> _launchURL(BuildContext context, String url, String? fileName) async {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Downloading and opening file...")),
       );
     }
     try {
-      await _apiService.downloadAndOpenFile(url, context: context);
+      await _apiService.downloadAndOpenFile(url, context: context, fileName: fileName);
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(

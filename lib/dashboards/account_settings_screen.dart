@@ -21,6 +21,8 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   
   bool _isLoading = false;
   bool _isInit = true;
+  String _userRole = '';
+  String? _selectedTitle;
 
   @override
   void didChangeDependencies() {
@@ -34,7 +36,9 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   Future<void> _loadInitialData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _titleController = TextEditingController(text: prefs.getString('title') ?? '');
+      _userRole = prefs.getString('user_role') ?? 'student';
+      _selectedTitle = prefs.getString('title');
+      _titleController = TextEditingController(text: _selectedTitle ?? '');
       _firstNameController = TextEditingController(text: prefs.getString('first_name') ?? '');
       _middleNameController = TextEditingController(text: prefs.getString('middle_name') ?? '');
       _lastNameController = TextEditingController(text: prefs.getString('last_name') ?? '');
@@ -58,7 +62,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
     setState(() => _isLoading = true);
     try {
       final Map<String, dynamic> data = {
-        'title': _titleController.text.trim(),
+        'title': _userRole == 'instructor' ? _selectedTitle : null,
         'first_name': _firstNameController.text.trim(),
         'middle_name': _middleNameController.text.trim(),
         'last_name': _lastNameController.text.trim(),
@@ -69,7 +73,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Profile updated successfully"), backgroundColor: Colors.green),
+          const SnackBar(content: Text("Request sent to admin successfully"), backgroundColor: Colors.green),
         );
         Navigator.pop(context);
       }
@@ -107,7 +111,9 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               const Text("Personal Information", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
               const SizedBox(height: 20),
               
-              _buildTextField("Title", _titleController, Icons.title_rounded, "e.g. Dr., Prof."),
+              if (_userRole == 'instructor') _buildTitleDropdown(),
+              if (_userRole != 'instructor' && _userRole != 'student') _buildTextField("Title", _titleController, Icons.title_rounded, "e.g. Dr., Prof."),
+              
               _buildTextField("First Name", _firstNameController, Icons.person_outline_rounded, "Required", required: true),
               _buildTextField("Middle Name", _middleNameController, Icons.person_outline_rounded, ""),
               _buildTextField("Last Name", _lastNameController, Icons.person_outline_rounded, "Required", required: true),
@@ -128,12 +134,62 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                   ),
                   child: _isLoading 
                     ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : const Text("Save Changes", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    : const Text("Request Admin Approval", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTitleDropdown() {
+    final List<String> titles = ['Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Prof.'];
+    
+    // Ensure selected title is in the list
+    if (_selectedTitle != null && !titles.contains(_selectedTitle)) {
+      _selectedTitle = null;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Title", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black54)),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: _selectedTitle,
+            items: titles.map((title) {
+              return DropdownMenuItem(
+                value: title,
+                child: Text(title),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedTitle = value;
+              });
+            },
+            decoration: InputDecoration(
+              hintText: "Select Title",
+              prefixIcon: const Icon(Icons.title_rounded, color: Color(0xFF09AEF5), size: 22),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF09AEF5), width: 1.5)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return "Title is required";
+              }
+              return null;
+            },
+          ),
+        ],
       ),
     );
   }

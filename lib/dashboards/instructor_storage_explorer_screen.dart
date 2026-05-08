@@ -897,7 +897,7 @@ class _InstructorStorageExplorerScreenState extends State<InstructorStorageExplo
     
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening file...")));
     try {
-      await _apiService.downloadAndOpenFile(urlStr, context: context);
+      await _apiService.downloadAndOpenFile(urlStr, context: context, fileName: fileItem['name']);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     }

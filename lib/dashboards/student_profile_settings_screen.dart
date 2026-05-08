@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'account_settings_screen.dart';
+import 'notification_settings_screen.dart';
+import 'app_preferences_screen.dart';
+import 'student_profile_downloads_screen.dart';
 
 class StudentProfileSettingsScreen extends StatefulWidget {
   const StudentProfileSettingsScreen({super.key});
@@ -8,83 +12,84 @@ class StudentProfileSettingsScreen extends StatefulWidget {
 }
 
 class _StudentProfileSettingsScreenState extends State<StudentProfileSettingsScreen> {
-  String _fontSize = 'Medium';
-  String _layoutView = 'Grid';
-  bool _isSilent = false;
-  List<String> _silentExceptions = [];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FC),
+      backgroundColor: const Color(0xFFF8FAFF),
       appBar: AppBar(
-        title: const Text('Settings', style: TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFFF4F7FC),
+        title: const Text(
+          'Settings',
+          style: TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold, fontSize: 22),
+        ),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        centerTitle: false,
         iconTheme: const IconThemeData(color: Color(0xFF05398F)),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "App Preferences",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-            ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 10),
             
-            // Font Size Setting
-            _buildSectionHeader("Font Size"),
-            _buildRadioGroup(
-              options: ['Small', 'Medium', 'Large'],
-              groupValue: _fontSize,
-              onChanged: (val) => setState(() => _fontSize = val!),
-            ),
-            const SizedBox(height: 30),
-
-            // Layout View Setting
-            _buildSectionHeader("Courses Layout View"),
-            Row(
-              children: [
-                _buildLayoutButton('Grid', Icons.grid_view_rounded),
-                const SizedBox(width: 16),
-                _buildLayoutButton('List', Icons.view_list_rounded),
-              ],
-            ),
-            const SizedBox(height: 30),
-
-            // Notification / Silent Preference Setting
-            _buildSectionHeader("Silent Mode"),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.02),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  )
-                ],
+            // Primary Categories
+            _buildSectionHeader("System"),
+            _buildSettingsGroup([
+              _buildSettingsTile(
+                icon: Icons.person_rounded,
+                iconColor: Colors.blue,
+                title: "Account",
+                subtitle: "Profile, Security, Email",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AccountSettingsScreen()),
+                  );
+                },
               ),
-              child: SwitchListTile(
-                title: const Text("Enable Silent Mode", style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-                subtitle: const Text("Mute notifications based on exceptions", style: TextStyle(fontSize: 12, color: Colors.black54)),
-                value: _isSilent,
-                activeColor: const Color(0xFF09AEF5),
-                onChanged: (val) => setState(() => _isSilent = val),
+              _buildSettingsTile(
+                icon: Icons.notifications_rounded,
+                iconColor: Colors.redAccent,
+                title: "Notifications",
+                subtitle: "Silent Mode, System Alerts",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const NotificationSettingsScreen()),
+                  );
+                },
               ),
-            ),
+              _buildSettingsTile(
+                icon: Icons.tune_rounded,
+                iconColor: Colors.teal,
+                title: "App Preferences",
+                subtitle: "Theme, Font Size, Layout",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AppPreferencesScreen()),
+                  );
+                },
+              ),
+              _buildSettingsTile(
+                icon: Icons.download_rounded,
+                iconColor: Colors.green,
+                title: "Downloads",
+                subtitle: "Offline storage & usage limits",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const StudentProfileDownloadsScreen()),
+                  );
+                },
+              ),
+            ]),
+
+            const SizedBox(height: 32),
             
-            if (_isSilent) ...[
-              const SizedBox(height: 16),
-              const Padding(
-                padding: EdgeInsets.only(left: 8.0, bottom: 8.0),
-                child: Text("Allow Exceptions For (Check to allow):", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black54)),
-              ),
-              _buildCheckboxGroup(['Chats', 'Only Announcements', 'System Notification', 'All']),
-            ]
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -93,112 +98,78 @@ class _StudentProfileSettingsScreenState extends State<StudentProfileSettingsScr
 
   Widget _buildSectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.blueGrey)),
-    );
-  }
-
-  Widget _buildLayoutButton(String layoutName, IconData icon) {
-    bool isSelected = _layoutView == layoutName;
-    return Expanded(
-      child: InkWell(
-        onTap: () => setState(() => _layoutView = layoutName),
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF09AEF5).withOpacity(0.1) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected ? const Color(0xFF09AEF5) : Colors.grey.shade300,
-              width: 2,
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: isSelected ? const Color(0xFF09AEF5) : Colors.grey.shade500, size: 30),
-              const SizedBox(height: 8),
-              Text(
-                layoutName, 
-                style: TextStyle(
-                  color: isSelected ? const Color(0xFF09AEF5) : Colors.grey.shade600,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
-                )
-              ),
-            ],
-          ),
+      padding: const EdgeInsets.only(left: 4, bottom: 12),
+      child: Text(
+        title.toUpperCase(),
+        style: const TextStyle(
+          fontSize: 13, 
+          fontWeight: FontWeight.w700, 
+          color: Colors.blueGrey,
+          letterSpacing: 1.2,
         ),
       ),
     );
   }
 
-  Widget _buildRadioGroup({required List<String> options, required String groupValue, required ValueChanged<String?> onChanged}) {
+  Widget _buildSettingsGroup(List<Widget> children) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           )
         ],
       ),
       child: Column(
-        children: options.map((option) {
-          return RadioListTile<String>(
-            title: Text(option, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-            value: option,
-            groupValue: groupValue,
-            activeColor: const Color(0xFF09AEF5),
-            onChanged: onChanged,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        children: List.generate(children.length, (index) {
+          if (index == children.length - 1) return children[index];
+          return Column(
+            children: [
+              children[index],
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Divider(height: 1, color: Color(0xFFF1F5F9)),
+              ),
+            ],
           );
-        }).toList(),
+        }),
       ),
     );
   }
 
-  Widget _buildCheckboxGroup(List<String> options) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          )
-        ],
+  Widget _buildSettingsTile({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    String? subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: iconColor.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: iconColor, size: 22),
       ),
-      child: Column(
-        children: options.map((option) {
-          return CheckboxListTile(
-            title: Text(option, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
-            value: _silentExceptions.contains(option),
-            activeColor: const Color(0xFF09AEF5),
-            onChanged: (bool? checked) {
-              setState(() {
-                if (checked == true) {
-                  // If 'All' is checked, uncheck others or just add 'All'
-                  if (option == 'All') {
-                    _silentExceptions = ['All'];
-                  } else {
-                    _silentExceptions.remove('All');
-                    _silentExceptions.add(option);
-                  }
-                } else {
-                  _silentExceptions.remove(option);
-                }
-              });
-            },
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-          );
-        }).toList(),
+      title: Text(
+        title,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
       ),
+      subtitle: subtitle != null 
+          ? Text(subtitle, style: const TextStyle(fontSize: 13, color: Colors.black54))
+          : null,
+      trailing: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 14),
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     );
   }
 }
+
+

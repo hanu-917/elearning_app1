@@ -1,11 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart'; 
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart'; 
 import '../auth/welcome_screen.dart';
-import 'instructor_courses_screen.dart';
-import 'account_settings_screen.dart';
-import 'instructor_schedule_screen.dart';
-import 'department_info_screen.dart';
+import 'student_profile_account_screen.dart';
+import 'student_profile_downloads_screen.dart';
+import 'student_profile_settings_screen.dart';
 import 'help_support_screen.dart';
+
 
 class InstructorProfileScreen extends StatefulWidget {
   const InstructorProfileScreen({super.key});
@@ -15,11 +18,13 @@ class InstructorProfileScreen extends StatefulWidget {
 }
 
 class _InstructorProfileScreenState extends State<InstructorProfileScreen> {
-  String _title = 'Dr.';
+  String _title = '';
   String _firstName = '';
   String _middleName = '';
-  String _lastName = 'Alemu';
-  String _email = 'alemu.instructor@bdu.edu';
+  String _lastName = '';
+  String _email = '';
+  String _institutionalId = '';
+  String? _profileImagePath;
 
   @override
   void initState() {
@@ -36,7 +41,37 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen> {
       _middleName = prefs.getString('middle_name') ?? '';
       _lastName = prefs.getString('last_name') ?? '';
       _email = prefs.getString('email') ?? '';
+      _institutionalId = prefs.getString('institutional_id') ?? 'N/A';
+      _profileImagePath = prefs.getString('profile_image_path');
     });
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png'],
+      );
+      if (result != null && result.files.single.path != null) {
+        final File file = File(result.files.single.path!);
+        final directory = await getApplicationDocumentsDirectory();
+        final String fileName = 'profile_picture_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final File localImage = await file.copy('${directory.path}/$fileName');
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('profile_image_path', localImage.path);
+
+        setState(() {
+          _profileImagePath = localImage.path;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking image: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -52,49 +87,45 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen> {
           style: TextStyle(color: Color(0xFF05398F), fontSize: 24, fontWeight: FontWeight.bold)
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadUserData,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-  
-              // 1. Profile Header Hero
-              Center(
-                child: Stack(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF09AEF5).withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          )
-                        ]
-                      ),
-                      child: const CircleAvatar(
-                        radius: 65,
-                        backgroundColor: Colors.white,
-                        child: CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Color(0xFFE3F2FD),
-                          child: Icon(Icons.person_rounded, size: 70, color: Color(0xFF09AEF5)),
-                        ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const SizedBox(height: 20),
+
+            // 1. Profile Header Hero
+            Center(
+              child: Stack(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF09AEF5).withOpacity(0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        )
+                      ]
+                    ),
+                    child: CircleAvatar(
+                      radius: 65,
+                      backgroundColor: Colors.white,
+                      child: CircleAvatar(
+                        radius: 60,
+                        backgroundColor: const Color(0xFFE3F2FD), // Profile placeholder
+                        backgroundImage: _profileImagePath != null ? FileImage(File(_profileImagePath!)) : null,
+                        child: _profileImagePath == null
+                            ? const Icon(Icons.person_rounded, size: 70, color: Color(0xFF09AEF5))
+                            : null,
                       ),
                     ),
-                    Positioned(
-                      bottom: 0,
-                      right: 4,
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const AccountSettingsScreen()),
-                          ).then((_) => _loadUserData());
-                        },
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    right: 4,
+                      child: InkWell(
+                        onTap: _pickImage,
+                        borderRadius: BorderRadius.circular(30),
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
@@ -116,53 +147,53 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen> {
                           child: const Icon(Icons.edit_rounded, color: Colors.white, size: 18),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-  
-              const SizedBox(height: 20),
-              
-              Text("$_title $_firstName $_middleName $_lastName".replaceAll(RegExp(r'\s+'), ' ').trim(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.black87)),
-              const SizedBox(height: 4),
-              if (_email.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF09AEF5).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Text(
-                    _email,
-                    style: const TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold, fontSize: 13)
-                  ),
-                ),
-  
-              const SizedBox(height: 40),
-  
-              // 2. Settings Options List
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  children: [
-                    _buildProfileOption(Icons.menu_book_rounded, "Assigned Courses", Colors.blue, () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorCoursesScreen()));
-                    }),
-                    _buildProfileOption(Icons.calendar_month_rounded, "Schedule & Office Hours", Colors.orange, () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorScheduleScreen()));
-                    }),
-                    _buildProfileOption(Icons.business_rounded, "Department Information", Colors.green, () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const DepartmentInfoScreen()));
-                    }),
-                    _buildProfileOption(Icons.settings_rounded, "Account Settings", Colors.grey.shade700, () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const AccountSettingsScreen())).then((_) => _loadUserData());
-                    }),
-                    _buildProfileOption(Icons.help_outline_rounded, "Help & Support", Colors.purple, () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
-                    }),
-                  ],
-                ),
+                ],
               ),
+            ),
+
+            const SizedBox(height: 20),
+            
+            Text("${_title.isNotEmpty ? '$_title ' : ''}$_firstName $_middleName $_lastName".replaceAll(RegExp(r'\s+'), ' ').trim(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.black87)),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF09AEF5).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                _email,
+                style: const TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold, fontSize: 13)
+              ),
+            ),
+            const SizedBox(height: 4),
+            if (_institutionalId.isNotEmpty && _institutionalId != 'N/A')
+              Text(
+                "ID: $_institutionalId",
+                style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w500, fontSize: 13)
+              ),
+
+            const SizedBox(height: 40),
+
+            // 2. Settings Options List
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: [
+                  _buildProfileOption(Icons.settings_rounded, "Settings", Colors.grey.shade700, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileSettingsScreen()));
+                  }),
+                  _buildProfileOption(Icons.security_rounded, "Privacy and Security", Colors.red, onTap: () {}),
+                  _buildProfileOption(Icons.help_outline_rounded, "Help Center", Colors.purple, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
+                  }),
+                  _buildProfileOption(Icons.feedback_outlined, "Send Feedback", Colors.teal, onTap: () {}),
+                  _buildProfileOption(Icons.info_outline_rounded, "About ELMS", Colors.blueGrey, onTap: () {}),
+
+                ],
+              ),
+            ),
 
             const SizedBox(height: 40),
 
@@ -202,11 +233,10 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen> {
           ],
         ),
       ),
-     ),
     );
   }
 
-  Widget _buildProfileOption(IconData icon, String title, Color color, VoidCallback onTap) {
+  Widget _buildProfileOption(IconData icon, String title, Color color, {String? subtitle, VoidCallback? onTap}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -224,7 +254,7 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
+          onTap: onTap ?? () {},
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
@@ -239,7 +269,17 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen> {
                 ),
                 const SizedBox(width: 20),
                 Expanded(
-                  child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Colors.black87)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Colors.black87)),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 4),
+                        Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                      ]
+                    ],
+                  ),
                 ),
                 const Icon(Icons.chevron_right_rounded, color: Colors.black38),
               ],

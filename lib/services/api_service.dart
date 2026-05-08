@@ -429,6 +429,31 @@ class ApiService {
     }
   }
 
+  Future<List<dynamic>> getMyGroups() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/groups/student/my-groups'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'] ?? [];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load your groups');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
   // === Assessment Methods ===
 
   Future<List<dynamic>> getAssessments(String courseId) async {
@@ -457,7 +482,63 @@ class ApiService {
     }
   }
 
+  Future<List<dynamic>> getStudentAssignments() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/assignments/student/my-assignments'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'] ?? [];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load assignments');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> submitAssignment(String assignmentId, String filePath, {String? groupId}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/assignments/submit'));
+      request.headers['Authorization'] = 'Bearer $token';
+      
+      request.fields['assignment_id'] = assignmentId;
+      if (groupId != null) {
+        request.fields['group_id'] = groupId;
+      }
+      
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+
+      var streamedResponse = await request.send();
+      var response = await http.Response.fromStream(streamedResponse);
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return data;
+      } else {
+        throw Exception(data['message'] ?? 'Submission failed');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
   Future<Map<String, dynamic>> createAssessment(Map<String, dynamic> assessmentData, {String? filePath}) async {
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
@@ -1162,6 +1243,31 @@ class ApiService {
       throw Exception('Server Error: $e');
     }
   }
+  Future<List<dynamic>> getCalendars() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/calendars'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      ).timeout(const Duration(seconds: 15));
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'] ?? [];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load calendars');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
   Future<List<dynamic>> getMySchedules() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -1212,7 +1318,7 @@ class ApiService {
     }
   }
 
-  Future<bool> isFileDownloaded(String filePath) async {
+  Future<bool> isFileDownloaded(String filePath, {String? fileName}) async {
     if (filePath.isEmpty) return false;
     try {
       Directory dir;
@@ -1221,9 +1327,15 @@ class ApiService {
       } else {
         dir = Directory('${(await getApplicationDocumentsDirectory()).path}/ELMS');
       }
-      String fileName = filePath.split('/').last;
-      if (fileName.isEmpty || !fileName.contains('.')) return false;
-      final file = File('${dir.path}/$fileName');
+      
+      String finalFileName = fileName ?? filePath.split('/').last;
+      if (!finalFileName.contains('.') && filePath.contains('.')) {
+        final ext = filePath.split('.').last;
+        finalFileName = "$finalFileName.$ext";
+      }
+      
+      if (finalFileName.isEmpty || !finalFileName.contains('.')) return false;
+      final file = File('${dir.path}/$finalFileName');
       return await file.exists();
     } catch (_) {
       return false;
@@ -1231,13 +1343,37 @@ class ApiService {
   }
 
 
-  Future<void> downloadAndOpenFile(String filePath, {BuildContext? context}) async {
+  Future<void> downloadAndOpenFile(String filePath, {BuildContext? context, String? fileName}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token');
 
-      String cleanBaseUrl = baseUrl.replaceAll('/api', '');
-      String url = '$cleanBaseUrl$filePath';
+      // Normalize backslashes (common in Windows paths from backend)
+      String normalizedPath = filePath.replaceAll('\\', '/');
+      
+      String url;
+      if (normalizedPath.startsWith('http')) {
+        url = normalizedPath;
+      } else {
+        String cleanBaseUrl = baseUrl.replaceAll('/api', '');
+        
+        // Handle cases where the path might contain an absolute Windows path (C:\...)
+        if (normalizedPath.contains(':/')) {
+          int uploadsIdx = normalizedPath.indexOf('/uploads/');
+          if (uploadsIdx != -1) {
+            normalizedPath = normalizedPath.substring(uploadsIdx);
+          }
+        }
+
+        // Ensure proper slash formatting between base and path
+        if (!normalizedPath.startsWith('/') && !cleanBaseUrl.endsWith('/')) {
+          url = '$cleanBaseUrl/$normalizedPath';
+        } else if (normalizedPath.startsWith('/') && cleanBaseUrl.endsWith('/')) {
+           url = cleanBaseUrl + normalizedPath.substring(1);
+        } else {
+          url = '$cleanBaseUrl$normalizedPath';
+        }
+      }
       
       final response = await http.get(
         Uri.parse(Uri.encodeFull(url)),
@@ -1256,20 +1392,26 @@ class ApiService {
           await dir.create(recursive: true);
         }
         
-        String fileName = filePath.split('/').last;
-        if (fileName.isEmpty || !fileName.contains('.')) {
-          fileName = "file_${DateTime.now().millisecondsSinceEpoch}.bin";
+        String finalFileName = fileName ?? filePath.split('/').last;
+        // Ensure extension is preserved if missing from fileName but present in filePath
+        if (!finalFileName.contains('.') && filePath.contains('.')) {
+          final ext = filePath.split('.').last;
+          finalFileName = "$finalFileName.$ext";
+        }
+
+        if (finalFileName.isEmpty || !finalFileName.contains('.')) {
+          finalFileName = "file_${DateTime.now().millisecondsSinceEpoch}.bin";
         }
         
-        final File file = File('${dir.path}/$fileName');
+        final File file = File('${dir.path}/$finalFileName');
         await file.writeAsBytes(response.bodyBytes);
         
-        if (context != null && ['txt', 'docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls'].contains(fileName.split('.').last.toLowerCase())) {
+        if (context != null && ['txt', 'docx', 'pptx', 'xlsx', 'doc', 'ppt', 'xls', 'pdf', 'jpg', 'jpeg', 'png', 'gif', 'bmp'].contains(finalFileName.split('.').last.toLowerCase())) {
           if (!context.mounted) return;
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => FileViewerScreen(filePath: file.path, fileName: fileName)
+              builder: (context) => FileViewerScreen(filePath: file.path, fileName: finalFileName)
             ),
           );
         } else {

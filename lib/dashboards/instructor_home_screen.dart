@@ -15,6 +15,7 @@ import 'course_details_screen.dart';
 import 'instructor_storage_explorer_screen.dart';
 import 'instructor_menu_screen.dart';
 import 'system_messages_screen.dart';
+import 'academic_calendar_screen.dart';
 
 
 class InstructorHomeScreen extends StatefulWidget {
@@ -26,7 +27,7 @@ class InstructorHomeScreen extends StatefulWidget {
 
 class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
   final ApiService _apiService = ApiService();
-  String _title = 'Professor';
+  String _title = '';
   String _firstName = '';
   List<dynamic> _courses = [];
   bool _isLoadingCourses = false;
@@ -106,20 +107,37 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
       if (schedule['content'] == null) continue;
       final content = schedule['content'] as Map<String, dynamic>;
       content.forEach((key, value) {
-        if (myCourseTitles.contains(value.toString().toLowerCase())) {
+        String entry = value.toString().trim().toLowerCase();
+        // Remove pipe and dash suffixes for cleaner matching
+        String courseTitleOnly = entry.split('|')[0].split('-')[0].trim();
+        
+        bool isMyCourse = myCourseTitles.contains(entry) || 
+                         myCourseTitles.contains(courseTitleOnly);
+        
+        // Fallback: check if any of our course identifiers is a substring or vice versa
+        if (!isMyCourse) {
+          isMyCourse = myCourseTitles.any((id) => 
+            id.length > 3 && (entry.contains(id) || id.contains(entry))
+          );
+        }
+
+        if (isMyCourse) {
           final parts = key.split('-');
           if (parts.length == 2) {
-            int slotIdx = int.parse(parts[0]);
-            int dayIdx = int.parse(parts[1]);
-            slots.add({
-              'dayIdx': dayIdx,
-              'slotIdx': slotIdx,
-              'course': value,
-              'schedule': schedule
-            });
+            try {
+              int slotIdx = int.parse(parts[0]);
+              int dayIdx = int.parse(parts[1]);
+              slots.add({
+                'dayIdx': dayIdx,
+                'slotIdx': slotIdx,
+                'course': value,
+                'schedule': schedule
+              });
+            } catch (e) {}
           }
         }
       });
+
     }
 
     if (slots.isEmpty) {
@@ -187,8 +205,7 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _title = prefs.getString('title') ?? 'Professor';
-      if (_title.isEmpty) _title = 'Professor';
+      _title = prefs.getString('title') ?? '';
       if (_title == 'None') _title = '';
       _firstName = prefs.getString('first_name') ?? '';
     });
@@ -720,7 +737,7 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
           Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorGroupsScreen()));
         }),
         _buildIconBtn(Icons.calendar_month_rounded, "Calendar", const Color(0xFFFFFDE7), Colors.amber, () {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Calendar coming soon!")));
+          Navigator.push(context, MaterialPageRoute(builder: (context) => const AcademicCalendarScreen()));
         }),
         _buildIconBtn(Icons.more_horiz_rounded, "More", Colors.grey.shade200, Colors.grey.shade700, () {
           Navigator.push(context, MaterialPageRoute(builder: (context) => InstructorMenuScreen(courses: _courses)));
