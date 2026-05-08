@@ -842,8 +842,10 @@ class GroupDetailScreen extends StatelessWidget {
         Icon(icon, color: const Color(0xFF09AEF5), size: 18),
         const SizedBox(width: 12),
         Text(label, style: const TextStyle(color: Colors.black54, fontSize: 13, fontWeight: FontWeight.w500)),
-        const Spacer(),
-        Text(value, style: const TextStyle(color: Color(0xFF05398F), fontSize: 14, fontWeight: FontWeight.bold)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(value, style: const TextStyle(color: Color(0xFF05398F), fontSize: 14, fontWeight: FontWeight.bold), textAlign: TextAlign.end, overflow: TextOverflow.ellipsis),
+        ),
       ],
     );
   }
@@ -875,7 +877,7 @@ class GroupDetailScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.person_outline_rounded, size: 16, color: Colors.black38),
                 const SizedBox(width: 10),
-                Text(m["full_name"] ?? "Unnamed", style: const TextStyle(fontSize: 14, color: Colors.black87)),
+                Expanded(child: Text(m["full_name"] ?? "Unnamed", style: const TextStyle(fontSize: 14, color: Colors.black87), overflow: TextOverflow.ellipsis)),
               ],
             ),
           )).toList(),

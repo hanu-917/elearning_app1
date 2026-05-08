@@ -11,6 +11,10 @@ import 'account_settings_screen.dart';
 import 'course_details_screen.dart';
 import 'instructor_files_screen.dart';
 import 'academic_calendar_screen.dart';
+import 'instructor_attendance_screen.dart';
+import 'instructor_convert_screen.dart';
+import 'instructor_quiz_screen.dart';
+import 'instructor_analytics_screen.dart';
 
 class InstructorMenuScreen extends StatefulWidget {
   final List<dynamic> courses;
@@ -80,16 +84,16 @@ class _InstructorMenuScreenState extends State<InstructorMenuScreen> {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorFilesScreen(showToggle: false, startInDownloads: true)));
                 }),
                 _buildMenuIcon(Icons.picture_as_pdf_rounded, "To PDF", const Color(0xFFFBE9E7), Colors.deepOrange, () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Document conversion coming soon!")));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorConvertScreen()));
                 }),
                 _buildMenuIcon(Icons.analytics_rounded, "Analytics", const Color(0xFFE8EAF6), Colors.indigo, () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Analytics coming soon!")));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorAnalyticsScreen()));
                 }),
                 _buildMenuIcon(Icons.how_to_reg_rounded, "Attendance", const Color(0xFFE0F2F1), Colors.teal, () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Attendance coming soon!")));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorAttendanceScreen()));
                 }),
                 _buildMenuIcon(Icons.quiz_rounded, "Quizzes", const Color(0xFFFCE4EC), Colors.pink, () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Quizzes coming soon!")));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorQuizScreen()));
                 }),
               ],
             ),

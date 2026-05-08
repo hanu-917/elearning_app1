@@ -454,25 +454,31 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            instructor ?? "Course Announcement",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: Colors.black87,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              instructor ?? "Course Announcement",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Colors.black87,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
-                          ),
-                          Text(
-                            courseTitle,
-                            style: const TextStyle(
-                              color: Colors.black45,
-                              fontSize: 13,
+                            Text(
+                              courseTitle,
+                              style: const TextStyle(
+                                color: Colors.black45,
+                                fontSize: 13,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),

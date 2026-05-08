@@ -10,6 +10,10 @@ import 'student_schedule_screen.dart';
 import 'student_all_courses_screen.dart';
 import 'student_grades_screen.dart';
 import 'student_groups_screen.dart';
+import 'student_materials_screen.dart';
+import 'student_assignments_screen.dart';
+import 'student_quiz_screen.dart';
+import 'student_analytics_screen.dart';
 import '../services/api_service.dart';
 
 class StudentMenuScreen extends StatefulWidget {
@@ -68,10 +72,10 @@ class _StudentMenuScreenState extends State<StudentMenuScreen> {
               crossAxisSpacing: 20,
               children: [
                 _buildMenuIcon(Icons.folder_shared_rounded, "Materials", const Color(0xFFFFF3E0), Colors.orange, () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Materials section coming soon!")));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentMaterialsScreen()));
                 }),
                 _buildMenuIcon(Icons.assignment_rounded, "Tasks", const Color(0xFFE3F2FD), Colors.blue, () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Tasks section coming soon!")));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentAssignmentsScreen()));
                 }),
                 _buildMenuIcon(Icons.book_rounded, "Courses", const Color(0xFFE8F5E9), Colors.green, () {
                   _fetchAndNavigateToAllCourses();
@@ -92,10 +96,10 @@ class _StudentMenuScreenState extends State<StudentMenuScreen> {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentDownloadsScreen()));
                 }),
                 _buildMenuIcon(Icons.quiz_rounded, "Quizzes", const Color(0xFFFCE4EC), Colors.pink, () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Quizzes coming soon!")));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentQuizScreen()));
                 }),
                 _buildMenuIcon(Icons.analytics_rounded, "Analytics", const Color(0xFFE8EAF6), Colors.indigo, () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Analytics coming soon!")));
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentAnalyticsScreen()));
                 }),
               ],
             ),

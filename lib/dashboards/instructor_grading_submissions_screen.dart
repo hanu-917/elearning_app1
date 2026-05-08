@@ -103,13 +103,19 @@ class _InstructorGradingSubmissionsScreenState extends State<InstructorGradingSu
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        submission['status'] == 'Graded' ? "Edit Grade" : "Grade Submission",
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF05398F)),
+                      Expanded(
+                        child: Text(
+                          submission['status'] == 'Graded' ? "Edit Grade" : "Grade Submission",
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF05398F)),
+                        ),
                       ),
-                      Text(
-                        submission['name'],
-                        style: const TextStyle(fontSize: 16, color: Colors.black54, fontWeight: FontWeight.bold),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          submission['name'],
+                          style: const TextStyle(fontSize: 16, color: Colors.black54, fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       )
                     ],
                   ),

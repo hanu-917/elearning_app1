@@ -515,7 +515,7 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Hello, $_title $_firstName".trim(), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5)),
+                Text("Hello, $_title $_firstName".trim(), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5), overflow: TextOverflow.ellipsis, maxLines: 1),
                 const SizedBox(height: 4),
                 const Text("Welcome to BDU ELMS", style: TextStyle(color: Colors.white70, fontSize: 14)),
               ],
@@ -638,15 +638,17 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text("Quick Action", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
-                        SizedBox(height: 8),
-                        Text("Upload", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24)),
-                        Text("Files", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
-                      ],
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text("Quick Action", style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+                          SizedBox(height: 8),
+                          Text("Upload", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 24)),
+                          Text("Files", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
                     ),
                     Container(
                       padding: const EdgeInsets.all(12),
