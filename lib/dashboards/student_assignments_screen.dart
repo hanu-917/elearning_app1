@@ -152,14 +152,15 @@ class _StudentAssignmentsScreenState extends State<StudentAssignmentsScreen> wit
                 style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)
               ),
               const SizedBox(height: 15),
-              Row(
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
                 children: [
                   _buildBadge(
                     isGroup ? Icons.groups_rounded : Icons.person_rounded, 
                     isGroup ? "GROUP" : "INDIVIDUAL", 
                     isGroup ? Colors.cyan : Colors.blue
                   ),
-                  const SizedBox(width: 10),
                   if (!isSubmitted)
                     _buildBadge(Icons.access_time_rounded, "Due ${_formatDate(task['due_date'])}", Colors.orange),
                   if (isSubmitted && task['grade'] != null)

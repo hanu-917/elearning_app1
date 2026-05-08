@@ -164,15 +164,11 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-              const SizedBox(width: 10),
-              Text(label, style: const TextStyle(fontSize: 15)),
-            ],
-          ),
+          Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          const SizedBox(width: 10),
+          Expanded(child: Text(label, style: const TextStyle(fontSize: 15), overflow: TextOverflow.ellipsis)),
+          const SizedBox(width: 8),
           Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
         ],
       ),

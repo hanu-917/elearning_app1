@@ -793,12 +793,16 @@ class _InstructorInboxScreenState extends State<InstructorInboxScreen> {
                 if (courseCode != null) ...[
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(6)),
-                        child: Text(
-                          section != null ? "$courseCode • Sec $section" : courseCode, 
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.grey.shade700)
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(6)),
+                          child: Text(
+                            section != null ? "$courseCode • Sec $section" : courseCode, 
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10, color: Colors.grey.shade700),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
                       ),
                     ],

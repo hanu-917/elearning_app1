@@ -313,7 +313,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
         children: [
           Icon(Icons.info_outline_rounded, color: Colors.black38),
           SizedBox(width: 15),
-          Text("No course guide uploaded yet.", style: TextStyle(color: Colors.black45, fontWeight: FontWeight.w500)),
+          Expanded(child: Text("No course guide uploaded yet.", style: TextStyle(color: Colors.black45, fontWeight: FontWeight.w500))),
         ],
       ),
     );
