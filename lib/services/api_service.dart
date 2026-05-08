@@ -1579,7 +1579,145 @@ class ApiService {
       throw Exception('Server Error: $e');
     }
   }
+
+  // ========================
+  // Support Tickets
+  // ========================
+
+  Future<Map<String, dynamic>> createSupportTicket(String subject, String description, {String priority = 'Medium'}) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/tickets'),
+        headers: {"Content-Type": "application/json", "Authorization": "Bearer $token"},
+        body: jsonEncode({"subject": subject, "description": description, "priority": priority}),
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 201 && data['success'] == true) {
+        return data['data'];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to create ticket');
+      }
+    } catch (e) {
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
+    }
+  }
+
+  Future<List<dynamic>> getMySupportTickets() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/tickets/my-tickets'),
+        headers: {"Authorization": "Bearer $token"},
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'] ?? [];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load tickets');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
+  // ========================
+  // Enrollments
+  // ========================
+
+  Future<List<dynamic>> getEnrollmentsByCourse(String courseId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/enrollments/course/$courseId'),
+        headers: {"Authorization": "Bearer $token"},
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'] ?? [];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load enrollments');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> enrollStudent(String courseId, String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/enrollments'),
+        headers: {"Content-Type": "application/json", "Authorization": "Bearer $token"},
+        body: jsonEncode({"course_id": courseId, "user_id": userId}),
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 201 && data['success'] == true) {
+        return data['data'];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to enroll student');
+      }
+    } catch (e) {
+      throw Exception(e.toString().replaceAll('Exception: ', ''));
+    }
+  }
+
+  Future<Map<String, dynamic>> updateAssignment(String id, Map<String, dynamic> updates) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/assignments/$id'),
+        headers: {"Content-Type": "application/json", "Authorization": "Bearer $token"},
+        body: jsonEncode(updates),
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to update assignment');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
+  Future<void> deleteAssignment(String id) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.delete(
+        Uri.parse('$baseUrl/assignments/$id'),
+        headers: {"Authorization": "Bearer $token"},
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode != 200 || data['success'] != true) {
+        throw Exception(data['message'] ?? 'Failed to delete assignment');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
 }
-
-
-

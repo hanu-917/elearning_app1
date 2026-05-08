@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class StudentProfileAskQuestionScreen extends StatefulWidget {
   const StudentProfileAskQuestionScreen({super.key});
@@ -9,6 +10,8 @@ class StudentProfileAskQuestionScreen extends StatefulWidget {
 
 class _StudentProfileAskQuestionScreenState extends State<StudentProfileAskQuestionScreen> {
   final TextEditingController _msgController = TextEditingController();
+  final ApiService _apiService = ApiService();
+  bool _isSending = false;
   final List<Map<String, dynamic>> _messages = [
     {
       "isMe": false,
@@ -17,16 +20,46 @@ class _StudentProfileAskQuestionScreenState extends State<StudentProfileAskQuest
     }
   ];
 
-  void _sendMessage() {
-    if (_msgController.text.trim().isEmpty) return;
+  void _sendMessage() async {
+    final text = _msgController.text.trim();
+    if (text.isEmpty) return;
+
     setState(() {
-      _messages.add({
-        "isMe": true,
-        "text": _msgController.text.trim(),
-        "time": "Just now"
-      });
+      _messages.add({"isMe": true, "text": text, "time": "Sending..."});
       _msgController.clear();
+      _isSending = true;
     });
+
+    try {
+      await _apiService.createSupportTicket(
+        "App Question",
+        text,
+        priority: "Medium",
+      );
+      if (mounted) {
+        setState(() {
+          // Update the last message time
+          _messages.last["time"] = "Sent ✓";
+          // Add confirmation
+          _messages.add({
+            "isMe": false,
+            "text": "Your question has been submitted as a support ticket. You'll receive a response from the admin soon.",
+            "time": "System"
+          });
+          _isSending = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _messages.last["time"] = "Failed to send";
+          _isSending = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: ${e.toString().replaceAll('Exception: ', '')}"), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -64,6 +97,7 @@ class _StudentProfileAskQuestionScreenState extends State<StudentProfileAskQuest
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
           color: isMe ? const Color(0xFF09AEF5) : Colors.white,
           borderRadius: BorderRadius.only(
@@ -79,19 +113,12 @@ class _StudentProfileAskQuestionScreenState extends State<StudentProfileAskQuest
           children: [
             Text(
               text,
-              style: TextStyle(
-                color: isMe ? Colors.white : Colors.black87,
-                fontSize: 15,
-                height: 1.4,
-              ),
+              style: TextStyle(color: isMe ? Colors.white : Colors.black87, fontSize: 15, height: 1.4),
             ),
             const SizedBox(height: 6),
             Text(
               time,
-              style: TextStyle(
-                color: isMe ? Colors.white70 : Colors.black45,
-                fontSize: 11,
-              ),
+              style: TextStyle(color: isMe ? Colors.white70 : Colors.black45, fontSize: 11),
             ),
           ],
         ),
@@ -119,23 +146,26 @@ class _StudentProfileAskQuestionScreenState extends State<StudentProfileAskQuest
                 child: TextField(
                   controller: _msgController,
                   decoration: const InputDecoration(
-                    hintText: "Type a message...",
+                    hintText: "Type your question...",
                     border: InputBorder.none,
                   ),
                   onSubmitted: (_) => _sendMessage(),
+                  enabled: !_isSending,
                 ),
               ),
             ),
             const SizedBox(width: 12),
             GestureDetector(
-              onTap: _sendMessage,
+              onTap: _isSending ? null : _sendMessage,
               child: Container(
                 padding: const EdgeInsets.all(12),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF09AEF5),
+                decoration: BoxDecoration(
+                  color: _isSending ? Colors.grey : const Color(0xFF09AEF5),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                child: _isSending
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
               ),
             )
           ],
