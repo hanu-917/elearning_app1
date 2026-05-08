@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../dashboards/instructor_dashboard.dart';
 import '../dashboards/student_dashboard.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -134,15 +135,29 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               
-              // Remember Me Checkbox
+              // Remember Me + Forgot Password Row
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Checkbox(
-                    value: _rememberMe,
-                    onChanged: (value) => setState(() => _rememberMe = value!),
-                    activeColor: Colors.blue,
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: _rememberMe,
+                        onChanged: (value) => setState(() => _rememberMe = value!),
+                        activeColor: Colors.blue,
+                      ),
+                      const Text("Remember Me", style: TextStyle(color: Colors.grey)),
+                    ],
                   ),
-                  const Text("Remember Me", style: TextStyle(color: Colors.grey)),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+                      );
+                    },
+                    child: const Text("Forgot Password?", style: TextStyle(color: Colors.blue)),
+                  ),
                 ],
               ),
               
