@@ -1427,6 +1427,98 @@ class ApiService {
       throw Exception("Could not open file: $e");
     }
   }
+  // === Notification Methods ===
+
+  Future<Map<String, dynamic>> getNotificationSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/notifications/settings'),
+        headers: {"Authorization": "Bearer $token"},
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load settings');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> updateNotificationSettings(Map<String, bool> settings) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/notifications/settings'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(settings),
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to update settings');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
+  Future<List<dynamic>> getNotifications() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/notifications'),
+        headers: {"Authorization": "Bearer $token"},
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        return data['data'] ?? [];
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load notifications');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
+  Future<void> markNotificationAsRead(String id) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/notifications/$id/read'),
+        headers: {"Authorization": "Bearer $token"},
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode != 200 || data['success'] != true) {
+        throw Exception(data['message'] ?? 'Failed to mark notification as read');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
 }
+
 
 

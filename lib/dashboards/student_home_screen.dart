@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'system_messages_screen.dart';
+import 'notifications_screen.dart';
 import 'student_menu_screen.dart';
 import 'student_courses_screen.dart';
 import 'chat_detail_screen.dart';
@@ -312,7 +313,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           ),
           GestureDetector(
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const SystemMessagesScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsScreen()));
             },
             child: Container(
               padding: const EdgeInsets.all(2),

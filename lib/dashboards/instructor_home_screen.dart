@@ -16,6 +16,7 @@ import 'instructor_storage_explorer_screen.dart';
 import 'instructor_menu_screen.dart';
 import 'system_messages_screen.dart';
 import 'academic_calendar_screen.dart';
+import 'notifications_screen.dart';
 
 
 class InstructorHomeScreen extends StatefulWidget {
@@ -522,7 +523,7 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
           ),
           GestureDetector(
             onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const SystemMessagesScreen()));
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsScreen()));
             },
             child: Container(
               padding: const EdgeInsets.all(2),
