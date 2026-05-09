@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/date_helper.dart';
-import 'student_profile_downloads_screen.dart';
 
 class AppPreferencesScreen extends StatefulWidget {
   const AppPreferencesScreen({super.key});
@@ -12,7 +11,6 @@ class AppPreferencesScreen extends StatefulWidget {
 
 class _AppPreferencesScreenState extends State<AppPreferencesScreen> {
   String _fontSize = 'Medium';
-  String _layoutView = 'Grid';
   bool _darkMode = false;
   String _calendarFormat = 'Global';
 
@@ -26,7 +24,6 @@ class _AppPreferencesScreenState extends State<AppPreferencesScreen> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _fontSize = prefs.getString('pref_font_size') ?? 'Medium';
-      _layoutView = prefs.getString('pref_layout_view') ?? 'Grid';
       _darkMode = prefs.getBool('pref_dark_mode') ?? false;
       _calendarFormat = prefs.getString('pref_calendar_format') ?? 'Global';
     });
@@ -117,7 +114,7 @@ class _AppPreferencesScreenState extends State<AppPreferencesScreen> {
 
             const SizedBox(height: 30),
 
-            // Regional Settings (Requested)
+            // Regional Settings
             const Text("Regional Settings", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 15),
             _buildPreferenceCard(
@@ -158,46 +155,6 @@ class _AppPreferencesScreenState extends State<AppPreferencesScreen> {
                 ],
               ),
             ),
-
-            const SizedBox(height: 30),
-
-            // Layout
-            const Text("Layout Design", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 15),
-            Row(
-              children: [
-                _buildLayoutOption('Grid', Icons.grid_view_rounded),
-                const SizedBox(width: 16),
-                _buildLayoutOption('List', Icons.view_list_rounded),
-              ],
-            ),
-            
-            const SizedBox(height: 30),
-
-            // Downloads & Storage
-            const Text("Offline Media", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 15),
-            _buildPreferenceCard(
-              child: ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.download_for_offline_rounded, color: Colors.amber),
-                ),
-                title: const Text("Download Settings", style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: const Text("Manage offline storage and limits"),
-                trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.black26),
-                onTap: () {
-                  Navigator.push(
-                    context, 
-                    MaterialPageRoute(builder: (context) => const StudentProfileDownloadsScreen())
-                  );
-                },
-              ),
-            ),
             const SizedBox(height: 20),
           ],
         ),
@@ -217,42 +174,4 @@ class _AppPreferencesScreenState extends State<AppPreferencesScreen> {
       child: child,
     );
   }
-
-  Widget _buildLayoutOption(String layoutName, IconData icon) {
-    bool isSelected = _layoutView == layoutName;
-    return Expanded(
-      child: InkWell(
-        onTap: () {
-          setState(() => _layoutView = layoutName);
-          _savePreference('pref_layout_view', layoutName);
-        },
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF09AEF5).withOpacity(0.1) : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isSelected ? const Color(0xFF09AEF5) : Colors.grey.shade200,
-              width: 2,
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: isSelected ? const Color(0xFF09AEF5) : Colors.grey, size: 36),
-              const SizedBox(height: 8),
-              Text(
-                layoutName, 
-                style: TextStyle(
-                  color: isSelected ? const Color(0xFF09AEF5) : Colors.black87,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
-                )
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
-

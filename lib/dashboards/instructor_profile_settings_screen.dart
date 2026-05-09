@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'account_settings_screen.dart';
 import 'instructor_notification_settings_screen.dart';
 import 'app_preferences_screen.dart';
+import 'student_profile_downloads_screen.dart';
 
 class InstructorProfileSettingsScreen extends StatefulWidget {
   const InstructorProfileSettingsScreen({super.key});
@@ -34,7 +35,6 @@ class _InstructorProfileSettingsScreenState extends State<InstructorProfileSetti
             const SizedBox(height: 10),
             
             // Primary Categories
-            _buildSectionHeader("System"),
             _buildSettingsGroup([
               _buildSettingsTile(
                 icon: Icons.person_rounded,
@@ -52,7 +52,7 @@ class _InstructorProfileSettingsScreenState extends State<InstructorProfileSetti
                 icon: Icons.notifications_rounded,
                 iconColor: Colors.redAccent,
                 title: "Notifications",
-                subtitle: "Silent Mode, System Alerts",
+                subtitle: "Manage alerts and system updates",
                 onTap: () {
                   Navigator.push(
                     context,
@@ -64,11 +64,23 @@ class _InstructorProfileSettingsScreenState extends State<InstructorProfileSetti
                 icon: Icons.tune_rounded,
                 iconColor: Colors.teal,
                 title: "App Preferences",
-                subtitle: "Theme, Font Size, Layout",
+                subtitle: "Theme, Font Size, Date/Time",
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const AppPreferencesScreen()),
+                  );
+                },
+              ),
+              _buildSettingsTile(
+                icon: Icons.download_for_offline_rounded,
+                iconColor: Colors.amber,
+                title: "Offline Media",
+                subtitle: "Manage offline storage & limits",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const StudentProfileDownloadsScreen()),
                   );
                 },
               ),

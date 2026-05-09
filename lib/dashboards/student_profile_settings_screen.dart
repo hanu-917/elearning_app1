@@ -35,7 +35,6 @@ class _StudentProfileSettingsScreenState extends State<StudentProfileSettingsScr
             const SizedBox(height: 10),
             
             // Primary Categories
-            _buildSectionHeader("System"),
             _buildSettingsGroup([
               _buildSettingsTile(
                 icon: Icons.person_rounded,
@@ -53,7 +52,7 @@ class _StudentProfileSettingsScreenState extends State<StudentProfileSettingsScr
                 icon: Icons.notifications_rounded,
                 iconColor: Colors.redAccent,
                 title: "Notifications",
-                subtitle: "Silent Mode, System Alerts",
+                subtitle: "Manage alerts and system updates",
                 onTap: () {
                   Navigator.push(
                     context,
@@ -74,10 +73,10 @@ class _StudentProfileSettingsScreenState extends State<StudentProfileSettingsScr
                 },
               ),
               _buildSettingsTile(
-                icon: Icons.download_rounded,
-                iconColor: Colors.green,
-                title: "Downloads",
-                subtitle: "Offline storage & usage limits",
+                icon: Icons.download_for_offline_rounded,
+                iconColor: Colors.amber,
+                title: "Offline Media",
+                subtitle: "Manage offline storage & limits",
                 onTap: () {
                   Navigator.push(
                     context,
