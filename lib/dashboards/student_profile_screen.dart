@@ -24,6 +24,7 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   String _institutionalId = '';
   String? _profileImagePath;
   bool _isLoading = true;
+  bool _isOnline = true; // Assume online if the user is in the profile screen
 
   @override
   void initState() {
@@ -122,6 +123,27 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                       ),
                     ),
                   ),
+                  if (_isOnline)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4CAF50), // Vibrant online green
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF4CAF50).withOpacity(0.4),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            )
+                          ]
+                        ),
+                      ),
+                    ),
                   Positioned(
                     bottom: 0,
                     right: 4,

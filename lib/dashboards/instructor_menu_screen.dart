@@ -45,8 +45,8 @@ class _InstructorMenuScreenState extends State<InstructorMenuScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text("LMS Services", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
+
             GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -86,9 +86,7 @@ class _InstructorMenuScreenState extends State<InstructorMenuScreen> {
                 _buildMenuIcon(Icons.picture_as_pdf_rounded, "To PDF", const Color(0xFFFBE9E7), Colors.deepOrange, () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorConvertScreen()));
                 }),
-                _buildMenuIcon(Icons.analytics_rounded, "Analytics", const Color(0xFFE8EAF6), Colors.indigo, () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorAnalyticsScreen()));
-                }),
+
                 _buildMenuIcon(Icons.how_to_reg_rounded, "Attendance", const Color(0xFFE0F2F1), Colors.teal, () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorAttendanceScreen()));
                 }),
