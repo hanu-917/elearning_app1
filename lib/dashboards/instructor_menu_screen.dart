@@ -15,6 +15,7 @@ import 'instructor_attendance_screen.dart';
 import 'instructor_convert_screen.dart';
 import 'instructor_quiz_screen.dart';
 import 'instructor_analytics_screen.dart';
+import 'app_preferences_screen.dart';
 
 class InstructorMenuScreen extends StatefulWidget {
   final List<dynamic> courses;
@@ -104,6 +105,9 @@ class _InstructorMenuScreenState extends State<InstructorMenuScreen> {
             }),
             _buildListAction(Icons.settings_outlined, "Account Settings", "Manage your profile and security", () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => const AccountSettingsScreen()));
+            }),
+            _buildListAction(Icons.tune_rounded, "App Preferences", "Theme, Font Size, Date/Time", () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const AppPreferencesScreen()));
             }),
             _buildListAction(Icons.info_outline_rounded, "About ELMS", "App version and information", () {
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("BDU ELMS v1.0.0")));

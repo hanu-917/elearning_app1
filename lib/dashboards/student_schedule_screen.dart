@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../utils/date_helper.dart';
 
 class StudentScheduleScreen extends StatefulWidget {
   const StudentScheduleScreen({super.key});
@@ -19,18 +20,33 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen> {
 
   final List<String> _dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   final List<String> _slotTimes = [
-    "08:00 - 09:45",
-    "09:50 - 12:20",
-    "01:35 - 03:20",
-    "03:25 - 06:05",
-    "06:10 - 07:50",
-    "07:55 - 09:30"
+    "02:00 - 03:45",
+    "03:50 - 06:20",
+    "07:35 - 09:20",
+    "09:25 - 12:05",
+    "12:10 - 01:50",
+    "01:55 - 03:30"
   ];
 
   @override
   void initState() {
     super.initState();
-    _fetchSchedule();
+    DateHelper.init().then((_) {
+      if (mounted) {
+        _fetchSchedule();
+        DateHelper.calendarFormat.addListener(_handlePreferenceChange);
+      }
+    });
+  }
+
+  void _handlePreferenceChange() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    DateHelper.calendarFormat.removeListener(_handlePreferenceChange);
+    super.dispose();
   }
 
   Future<void> _fetchSchedule() async {
@@ -172,7 +188,7 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen> {
                 _buildCell("Day", isHeader: true, width: 80),
                 ...List.generate(_maxSlotIdx + 1, (slotIdx) {
                   return _buildCell(
-                    _slotTimes[slotIdx % _slotTimes.length], 
+                    DateHelper.formatTimeSlot(_slotTimes[slotIdx % _slotTimes.length]), 
                     isHeader: true, 
                     width: 140,
                     isTime: true

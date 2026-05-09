@@ -9,6 +9,7 @@ import 'student_assignments_screen.dart';
 import 'student_materials_screen.dart';
 import 'student_schedule_screen.dart';
 import '../services/api_service.dart';
+import '../utils/date_helper.dart';
 import 'package:file_picker/file_picker.dart';
 
 class StudentHomeScreen extends StatefulWidget {
@@ -34,10 +35,25 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-    _fetchTodaySchedule();
-    _fetchPendingTasks();
-    _fetchSystemUnread();
+    DateHelper.init().then((_) {
+      if (mounted) {
+        _loadUserData();
+        _fetchTodaySchedule();
+        _fetchPendingTasks();
+        _fetchSystemUnread();
+        DateHelper.calendarFormat.addListener(_handlePreferenceChange);
+      }
+    });
+  }
+
+  void _handlePreferenceChange() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    DateHelper.calendarFormat.removeListener(_handlePreferenceChange);
+    super.dispose();
   }
 
   Future<void> _fetchSystemUnread() async {
@@ -99,26 +115,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   }
 
   String _getDueString(String dueDateStr) {
-    try {
-      final dueDate = DateTime.parse(dueDateStr);
-      final now = DateTime.now();
-      final difference = dueDate.difference(now);
-
-      if (difference.isNegative) return "Overdue";
-
-      if (difference.inHours < 24) {
-        if (difference.inHours == 0) return "Due in ${difference.inMinutes} mins";
-        return "Due in ${difference.inHours} hrs";
-      }
-
-      if (difference.inDays < 7) {
-        return "Due ${DateFormat('EEEE').format(dueDate)}";
-      }
-
-      return "Due ${DateFormat('MMM d').format(dueDate)}";
-    } catch (e) {
-      return "Due $dueDateStr";
-    }
+    return DateHelper.formatDue(dueDateStr);
   }
 
   bool _isUrgent(String dueDateStr) {
@@ -146,10 +143,10 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     List<Map<String, dynamic>> todayClasses = [];
     
     final slotTimes = [
-      "08:00 AM - 09:45 AM",
-      "09:50 AM - 12:20 PM",
-      "01:35 PM - 03:20 PM",
-      "03:25 PM - 06:05 PM"
+      "02:00 - 03:45",
+      "03:50 - 06:20",
+      "07:35 - 09:20",
+      "09:25 - 12:05"
     ];
     final List<Color> colors = [Colors.purple, Colors.green, Colors.orange, Colors.blue, Colors.red, Colors.teal];
 
@@ -181,7 +178,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 if (dayIdx == todayIdx && isMyCourse) {
                   todayClasses.add({
                     'course': courseName,
-                    'time': slotTimes[slotIdx % slotTimes.length],
+                    'time': DateHelper.formatTimeSlot(slotTimes[slotIdx % slotTimes.length]),
                     'slotIdx': slotIdx,
                     'color': colors[todayClasses.length % colors.length]
                   });

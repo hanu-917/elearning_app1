@@ -4,8 +4,11 @@ import 'dart:ui';
 import 'auth/welcome_screen.dart';
 import 'dashboards/instructor_dashboard.dart';
 import 'dashboards/student_dashboard.dart';
+import 'utils/date_helper.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await DateHelper.init();
   runApp(const ELearningApp());
 }
 

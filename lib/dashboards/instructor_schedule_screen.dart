@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../utils/date_helper.dart';
 
 class InstructorScheduleScreen extends StatefulWidget {
   const InstructorScheduleScreen({super.key});
@@ -17,7 +18,22 @@ class _InstructorScheduleScreenState extends State<InstructorScheduleScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchData();
+    DateHelper.init().then((_) {
+      if (mounted) {
+        _fetchData();
+        DateHelper.calendarFormat.addListener(_handlePreferenceChange);
+      }
+    });
+  }
+
+  void _handlePreferenceChange() {
+    if (mounted) _fetchData();
+  }
+
+  @override
+  void dispose() {
+    DateHelper.calendarFormat.removeListener(_handlePreferenceChange);
+    super.dispose();
   }
 
   Future<void> _fetchData() async {
@@ -43,10 +59,10 @@ class _InstructorScheduleScreenState extends State<InstructorScheduleScreen> {
 
     final dayNames = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     final slotTimes = [
-      "08:00 AM - 09:45 AM",
-      "09:50 AM - 12:20 PM",
-      "01:35 PM - 03:20 PM",
-      "03:25 PM - 06:05 PM"
+      "02:00 - 03:45",
+      "03:50 - 06:20",
+      "07:35 - 09:20",
+      "09:25 - 12:05"
     ];
     final List<Color> colors = [Colors.blue, Colors.green, Colors.orange, Colors.purple, Colors.red, Colors.teal];
 
@@ -78,7 +94,7 @@ class _InstructorScheduleScreenState extends State<InstructorScheduleScreen> {
                       'dayIdx': dayIdx,
                       'slotIdx': slotIdx,
                       'course': courseName,
-                      'time': slotTimes[slotIdx % slotTimes.length],
+                      'time': DateHelper.formatTimeSlot(slotTimes[slotIdx % slotTimes.length]),
                       'location': "See Digital Schedule", 
                       'color': colors[extractedClasses.length % colors.length]
                     });

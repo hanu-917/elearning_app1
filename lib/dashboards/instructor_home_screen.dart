@@ -16,6 +16,7 @@ import 'instructor_storage_explorer_screen.dart';
 import 'instructor_menu_screen.dart';
 import 'system_notifications_screen.dart';
 import 'academic_calendar_screen.dart';
+import '../utils/date_helper.dart';
 
 
 class InstructorHomeScreen extends StatefulWidget {
@@ -45,10 +46,31 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-    _initData();
-    _startCarouselTimer();
-    _fetchSystemUnread();
+    DateHelper.init().then((_) {
+      if (mounted) {
+        _loadUserData();
+        _initData();
+        _startCarouselTimer();
+        _fetchSystemUnread();
+        DateHelper.calendarFormat.addListener(_handlePreferenceChange);
+      }
+    });
+  }
+
+  void _handlePreferenceChange() {
+    if (mounted) {
+      setState(() {
+        _calculateUpcomingClass();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _carouselTimer?.cancel();
+    _pageController.dispose();
+    DateHelper.calendarFormat.removeListener(_handlePreferenceChange);
+    super.dispose();
   }
 
   Future<void> _fetchSystemUnread() async {
@@ -72,12 +94,6 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
     });
   }
 
-  @override
-  void dispose() {
-    _carouselTimer?.cancel();
-    _pageController.dispose();
-    super.dispose();
-  }
 
   Future<void> _initData() async {
     await _fetchCourses();
@@ -189,13 +205,18 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
     nextSlot ??= slots.first;
 
     final dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    final slotTimes = ["8:30 AM", "10:45 AM", "1:35 PM", "3:25 PM"]; 
+    final slotTimes = [
+      "02:00 - 03:45",
+      "03:50 - 06:20",
+      "07:35 - 09:20",
+      "09:25 - 12:05"
+    ]; 
 
     setState(() {
       _upcomingClass = {
         'type': 'digital',
         'day': dayNames[nextSlot!['dayIdx']],
-        'time': slotTimes[nextSlot['slotIdx'] % slotTimes.length],
+        'time': DateHelper.formatTimeSlot(slotTimes[nextSlot['slotIdx'] % slotTimes.length]),
         'course': nextSlot['course'],
       };
     });

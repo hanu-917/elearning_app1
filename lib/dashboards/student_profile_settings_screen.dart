@@ -65,7 +65,7 @@ class _StudentProfileSettingsScreenState extends State<StudentProfileSettingsScr
                 icon: Icons.tune_rounded,
                 iconColor: Colors.teal,
                 title: "App Preferences",
-                subtitle: "Theme, Font Size, Layout",
+                subtitle: "Theme, Font Size, Date/Time",
                 onTap: () {
                   Navigator.push(
                     context,

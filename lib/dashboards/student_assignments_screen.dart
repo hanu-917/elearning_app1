@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'chat_detail_screen.dart';
+import '../utils/date_helper.dart';
 
 class StudentAssignmentsScreen extends StatefulWidget {
   const StudentAssignmentsScreen({super.key});
@@ -20,7 +21,23 @@ class _StudentAssignmentsScreenState extends State<StudentAssignmentsScreen> wit
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _fetchAssignments();
+    DateHelper.init().then((_) {
+      if (mounted) {
+        _fetchAssignments();
+        DateHelper.calendarFormat.addListener(_handlePreferenceChange);
+      }
+    });
+  }
+
+  void _handlePreferenceChange() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    DateHelper.calendarFormat.removeListener(_handlePreferenceChange);
+    super.dispose();
   }
 
   Future<void> _fetchAssignments() async {
@@ -41,11 +58,6 @@ class _StudentAssignmentsScreenState extends State<StudentAssignmentsScreen> wit
     }
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -204,12 +216,7 @@ class _StudentAssignmentsScreenState extends State<StudentAssignmentsScreen> wit
   }
 
   String _formatDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      return "${date.day}/${date.month}";
-    } catch (_) {
-      return dateStr;
-    }
+    return DateHelper.formatDateShort(dateStr);
   }
 
   void _showTaskOptions(Map<String, dynamic> task) {
