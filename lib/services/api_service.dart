@@ -2147,4 +2147,74 @@ class ApiService {
       throw Exception('Server Error: $e');
     }
   }
+
+  // ========================
+  // Course Goals
+  // ========================
+  Future<List<dynamic>> getCourseGoals(String courseId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/goals/$courseId'),
+        headers: {"Authorization": "Bearer $token"},
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return data; 
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load goals');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>> createCourseGoal(String courseId, Map<String, dynamic> goalData) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/goals/$courseId'),
+        headers: {"Authorization": "Bearer $token", "Content-Type": "application/json"},
+        body: jsonEncode(goalData)
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 201) {
+        return data;
+      } else {
+        throw Exception(data['message'] ?? 'Failed to create goal');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+  Future<Map<String, dynamic>> updateCourseGoal(String goalId, Map<String, dynamic> goalData) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.put(
+        Uri.parse('$baseUrl/goals/$goalId'),
+        headers: {"Authorization": "Bearer $token", "Content-Type": "application/json"},
+        body: jsonEncode(goalData)
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return data;
+      } else {
+        throw Exception(data['message'] ?? 'Failed to update goal');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
 }

@@ -30,6 +30,8 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
   Set<String> _selectedIds = {}; // For multi-selection
   bool _isLoading = true;
   bool _isInstructor = false;
+  List<dynamic> _goals = [];
+
 
   @override
   void initState() {
@@ -70,6 +72,13 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
       // Fetch chapters
       final chapters = await _apiService.getCourseChapters(_currentCourse['id'].toString());
       setState(() => _chapters = chapters);
+
+      try {
+        final goals = await _apiService.getCourseGoals(_currentCourse['id'].toString());
+        setState(() => _goals = goals);
+      } catch (e) {
+        print("Error fetching goals: $e");
+      }
 
       // Fetch ALL materials for the course in one go
       final allMaterials = await _apiService.getMaterialsByCourse(_currentCourse['id'].toString());
@@ -164,6 +173,11 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             tooltip: "Create Quiz",
           ),
           IconButton(
+            icon: Icon(Icons.track_changes_outlined, color: widget.themeColor),
+            onPressed: _showSetGoalDialog,
+            tooltip: "Set Course Goals",
+          ),
+          IconButton(
             icon: Icon(Icons.add_circle_outline_rounded, color: widget.themeColor),
             onPressed: () async {
                 await Navigator.push(
@@ -200,6 +214,21 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                 _buildNoGuideCard(),
               
               const SizedBox(height: 30),
+
+              // NEW: Course Goals
+              if (_goals.isNotEmpty) ...[
+                Row(
+                  children: [
+                     Icon(Icons.track_changes_outlined, color: widget.themeColor),
+                     const SizedBox(width: 8),
+                     const Text("Course Goals", 
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
+                  ]
+                ),
+                const SizedBox(height: 15),
+                ..._goals.map((g) => _buildGoalCard(g)).toList(),
+                const SizedBox(height: 30),
+              ],
               
               // NEW: Main Course Materials (Unassigned to chapters)
               if (_courseMaterials.isNotEmpty) ...[
@@ -625,5 +654,213 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     if (filename.endsWith('.mp4') || filename.endsWith('.mov')) return Icons.video_collection_rounded;
     if (filename.endsWith('.zip') || filename.endsWith('.rar')) return Icons.folder_zip_rounded;
     return Icons.description_rounded;
+  }
+
+  Widget _buildGoalCard(dynamic goal) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: widget.themeColor.withOpacity(0.3)),
+        boxShadow: [BoxShadow(color: widget.themeColor.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(goal['title'] ?? 'Goal', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: widget.themeColor)),
+              ),
+              if (goal['recurrence'] != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(goal['recurrence'], style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 13)),
+                ),
+              if (_isInstructor)
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 20, color: Colors.black54),
+                  onPressed: () => _showSetGoalDialog(goal),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                )
+            ],
+          ),
+          if (goal['description'] != null && goal['description'].isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(goal['description'], style: const TextStyle(color: Colors.black87, fontSize: 14)),
+          ],
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              if (goal['target_hours'] != null)
+                Chip(
+                  label: Text('${goal['target_hours']} Hours Reading', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  backgroundColor: widget.themeColor.withOpacity(0.1),
+                  side: BorderSide.none,
+                ),
+              if (goal['target_score'] != null)
+                Chip(
+                  label: Text('Target Score: ${goal['target_score']}%', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  backgroundColor: Colors.green.withOpacity(0.1),
+                  side: BorderSide.none,
+                ),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  void _showSetGoalDialog([dynamic existingGoal]) {
+    final titleCtrl = TextEditingController(text: existingGoal?['title']);
+    final descCtrl = TextEditingController(text: existingGoal?['description']);
+    final hoursCtrl = TextEditingController(text: existingGoal?['target_hours']?.toString());
+    final scoreCtrl = TextEditingController(text: existingGoal?['target_score']?.toString());
+    String selectedRecurrence = existingGoal?['recurrence'] ?? 'Weekly';
+    bool isSaving = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return Container(
+              padding: EdgeInsets.only(
+                top: 25, left: 25, right: 25,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 25
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(existingGoal == null ? "Set Course Goal" : "Edit Course Goal", 
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: widget.themeColor)),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: titleCtrl,
+                      decoration: InputDecoration(
+                        labelText: "Goal Title",
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    TextField(
+                      controller: descCtrl,
+                      maxLines: 2,
+                      decoration: InputDecoration(
+                        labelText: "Description (Optional)",
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: hoursCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: "Target Reading Hours",
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: TextField(
+                            controller: scoreCtrl,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: "Target Score %",
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+                    DropdownButtonFormField<String>(
+                      value: selectedRecurrence,
+                      decoration: InputDecoration(
+                        labelText: "Goal Recurrence",
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+                      ),
+                      items: ['Daily', 'Weekly', 'Monthly']
+                          .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) setSheetState(() => selectedRecurrence = val);
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 55,
+                      child: ElevatedButton(
+                        onPressed: isSaving ? null : () async {
+                          if (titleCtrl.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Title is required.")));
+                            return;
+                          }
+                          setSheetState(() => isSaving = true);
+                          try {
+                            final Map<String, dynamic> payload = {
+                              "title": titleCtrl.text,
+                              "description": descCtrl.text,
+                              "target_hours": hoursCtrl.text.isNotEmpty ? double.tryParse(hoursCtrl.text) : null,
+                              "target_score": scoreCtrl.text.isNotEmpty ? double.tryParse(scoreCtrl.text) : null,
+                              "recurrence": selectedRecurrence,
+                            };
+                            
+                            if (existingGoal == null) {
+                              await _apiService.createCourseGoal(_currentCourse['id'].toString(), payload);
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Goal created successfully!")));
+                            } else {
+                              await _apiService.updateCourseGoal(existingGoal['id'].toString(), payload);
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Goal updated successfully!")));
+                            }
+                            
+                            if (mounted) Navigator.pop(context);
+                            _fetchDetails();
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+                          } finally {
+                            if (mounted) setSheetState(() => isSaving = false);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: widget.themeColor,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                        ),
+                        child: isSaving 
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text("Save Goal", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
