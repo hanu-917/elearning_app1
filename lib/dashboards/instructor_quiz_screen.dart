@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import 'create_quiz_screen.dart';
 
 class InstructorQuizScreen extends StatefulWidget {
   const InstructorQuizScreen({super.key});
@@ -104,56 +105,16 @@ class _CourseQuizManageScreenState extends State<_CourseQuizManageScreen> {
   }
 
   void _createQuiz() async {
-    final titleCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    final durationCtrl = TextEditingController(text: "30");
-    final attemptsCtrl = TextEditingController(text: "1");
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Create Quiz"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: "Quiz Title*", border: OutlineInputBorder())),
-              const SizedBox(height: 12),
-              TextField(controller: descCtrl, decoration: const InputDecoration(labelText: "Description", border: OutlineInputBorder()), maxLines: 2),
-              const SizedBox(height: 12),
-              Row(children: [
-                Expanded(child: TextField(controller: durationCtrl, decoration: const InputDecoration(labelText: "Duration (min)", border: OutlineInputBorder()), keyboardType: TextInputType.number)),
-                const SizedBox(width: 12),
-                Expanded(child: TextField(controller: attemptsCtrl, decoration: const InputDecoration(labelText: "Max Attempts", border: OutlineInputBorder()), keyboardType: TextInputType.number)),
-              ]),
-            ],
-          ),
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreateQuizScreen(
+          currentCourseId: widget.courseId,
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
-          ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Create")),
-        ],
       ),
     );
-
-    if (confirmed != true || titleCtrl.text.trim().isEmpty) return;
-
-    try {
-      final quiz = await _apiService.createQuiz({
-        "course_id": widget.courseId,
-        "title": titleCtrl.text.trim(),
-        "description": descCtrl.text.trim(),
-        "duration_minutes": int.tryParse(durationCtrl.text) ?? 30,
-        "max_attempts": int.tryParse(attemptsCtrl.text) ?? 1,
-      });
-
-      if (mounted) {
-        Navigator.push(context, MaterialPageRoute(
-          builder: (context) => _QuizEditorScreen(quizId: quiz['id'].toString(), quizTitle: quiz['title'] ?? 'Quiz'),
-        )).then((_) => _fetch());
-      }
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red));
+    if (result == true) {
+      _fetch();
     }
   }
 

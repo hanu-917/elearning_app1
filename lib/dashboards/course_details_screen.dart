@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import 'instructor_materials_screen.dart';
+import 'create_quiz_screen.dart';
 
 class CourseDetailsScreen extends StatefulWidget {
   final Map<String, dynamic> course;
@@ -146,7 +147,22 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             onPressed: _showRemoveConfirmation,
             tooltip: "Remove Selected",
           ),
-        if (_selectedIds.isEmpty && _isInstructor)
+        if (_selectedIds.isEmpty && _isInstructor) ...[
+          IconButton(
+            icon: Icon(Icons.quiz_outlined, color: widget.themeColor),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CreateQuizScreen(
+                    currentCourseId: _currentCourse['id'].toString(),
+                    allCourses: _allCourses,
+                  ),
+                ),
+              );
+            },
+            tooltip: "Create Quiz",
+          ),
           IconButton(
             icon: Icon(Icons.add_circle_outline_rounded, color: widget.themeColor),
             onPressed: () async {
@@ -164,6 +180,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
               tooltip: "Add Materials",
             ),
         ],
+      ],
       ),
       body: _isLoading 
         ? const Center(child: CircularProgressIndicator())
