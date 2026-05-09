@@ -47,7 +47,11 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   }
 
   void _handlePreferenceChange() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      // Re-run the schedule calculation so the DateHelper formats the times with the new setting
+      _fetchTodaySchedule();
+      setState(() {});
+    }
   }
 
   @override
@@ -178,7 +182,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                 if (dayIdx == todayIdx && isMyCourse) {
                   todayClasses.add({
                     'course': courseName,
-                    'time': DateHelper.formatTimeSlot(slotTimes[slotIdx % slotTimes.length]),
+                    'time': DateHelper.formatTimeSlot(slotTimes[slotIdx % slotTimes.length], startOnly: true),
                     'slotIdx': slotIdx,
                     'color': colors[todayClasses.length % colors.length]
                   });

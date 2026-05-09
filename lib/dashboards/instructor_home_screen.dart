@@ -216,7 +216,7 @@ class _InstructorHomeScreenState extends State<InstructorHomeScreen> {
       _upcomingClass = {
         'type': 'digital',
         'day': dayNames[nextSlot!['dayIdx']],
-        'time': DateHelper.formatTimeSlot(slotTimes[nextSlot['slotIdx'] % slotTimes.length]),
+        'time': DateHelper.formatTimeSlot(slotTimes[nextSlot['slotIdx'] % slotTimes.length], startOnly: true),
         'course': nextSlot['course'],
       };
     });

@@ -55,14 +55,18 @@ class DateHelper {
     }
   }
 
-  static String formatTimeSlot(String slot) {
-    if (calendarFormat.value == 'Ethiopian') return "$slot (Eth)";
+  static String formatTimeSlot(String slot, {bool startOnly = false}) {
+    if (calendarFormat.value == 'Ethiopian') {
+      if (startOnly) return "${slot.split(' - ')[0]} (Eth)";
+      return "$slot (Eth)";
+    }
     
     // Input is assumed to be Ethiopian format (e.g., "02:00 - 03:45")
     try {
       final parts = slot.split(' - ');
       if (parts.length != 2) return slot;
       
+      if (startOnly) return _ethToGregorian(parts[0]);
       return "${_ethToGregorian(parts[0])} - ${_ethToGregorian(parts[1])}";
     } catch (_) {
       return slot;
