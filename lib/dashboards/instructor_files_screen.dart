@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'instructor_storage_explorer_screen.dart';
 import 'instructor_recent_files_screen.dart';
+import 'file_viewer_screen.dart';
 
 class InstructorFilesScreen extends StatefulWidget {
   final bool showToggle;
@@ -279,8 +280,7 @@ class _InstructorFilesScreenState extends State<InstructorFilesScreen> {
           child: Row(
             children: [
               ..._recentFiles.take(8).map((file) => _buildRecentFileItem(
-                file['name'], 
-                _getRelativeTime(file['created_at']), 
+                file, 
                 itemWidth
               )),
               if (_recentFiles.length > 8)
@@ -315,9 +315,13 @@ class _InstructorFilesScreenState extends State<InstructorFilesScreen> {
     );
   }
 
-  Widget _buildRecentFileItem(String name, String date, double width) {
-    return Container(
-      width: width,
+  Widget _buildRecentFileItem(dynamic fileItem, double width) {
+    String name = fileItem['name'];
+    String date = _getRelativeTime(fileItem['created_at']);
+    return GestureDetector(
+      onTap: () => _openRemoteFile(fileItem),
+      child: Container(
+        width: width,
       margin: const EdgeInsets.only(right: 15),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -358,6 +362,7 @@ class _InstructorFilesScreenState extends State<InstructorFilesScreen> {
             style: const TextStyle(color: Colors.black38, fontSize: 11, fontWeight: FontWeight.w500),
           ),
         ],
+      ),
       ),
     );
   }
@@ -472,17 +477,20 @@ class _InstructorFilesScreenState extends State<InstructorFilesScreen> {
       child: Column(
         children: filtered.map((entity) {
           final file = entity as File;
-          final name = file.path.split(Platform.pathSeparator).last;
-          return _buildDownloadFileTile(name, _formatBytes(file.lengthSync()), "Local Device");
+          return _buildDownloadFileTile(file, "Local Device");
         }).toList(),
       ),
     );
   }
 
-  Widget _buildDownloadFileTile(String name, String size, String author) {
+  Widget _buildDownloadFileTile(File file, String author) {
+    String name = file.path.split(Platform.pathSeparator).last;
+    String size = _formatBytes(file.lengthSync());
     IconData icon = _getIconForFile(name);
     Color iconColor = _getColorForFile(name);
-    return Container(
+    return GestureDetector(
+      onTap: () => _openLocalFile(file),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 4))]),
@@ -493,6 +501,7 @@ class _InstructorFilesScreenState extends State<InstructorFilesScreen> {
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14), overflow: TextOverflow.ellipsis), Text("$size • $author", style: const TextStyle(color: Colors.black38, fontSize: 12))])),
           const Icon(Icons.more_vert_rounded, color: Colors.black26),
         ],
+      ),
       ),
     );
   }
@@ -509,5 +518,32 @@ class _InstructorFilesScreenState extends State<InstructorFilesScreen> {
     if (ext == 'pdf') return Colors.red;
     if (ext == 'mp4') return Colors.orange;
     return const Color(0xFF05398F);
+  }
+
+  Future<void> _openRemoteFile(dynamic fileItem) async {
+    final urlStr = fileItem['file_path'] ?? fileItem['url'];
+    if (urlStr == null) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("File not found")));
+      return;
+    }
+    
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening file...")));
+    try {
+      await _apiService.downloadAndOpenFile(urlStr, context: context, fileName: fileItem['name']);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  void _openLocalFile(File file) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FileViewerScreen(
+          filePath: file.path,
+          fileName: file.path.split(Platform.pathSeparator).last,
+        ),
+      ),
+    );
   }
 }

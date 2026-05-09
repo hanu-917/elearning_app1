@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../services/api_service.dart';
 
 class InstructorRecentFilesScreen extends StatelessWidget {
   final List<dynamic> recentFiles;
@@ -48,7 +49,7 @@ class InstructorRecentFilesScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    ...entry.value.map((file) => _buildFileTile(file)).toList(),
+                    ...entry.value.map((file) => _buildFileTile(context, file)).toList(),
                   ],
                 );
               }).toList(),
@@ -85,7 +86,7 @@ class InstructorRecentFilesScreen extends StatelessWidget {
     return grouped;
   }
 
-  Widget _buildFileTile(dynamic file) {
+  Widget _buildFileTile(BuildContext context, dynamic file) {
     String name = file['name'] ?? 'Unknown File';
     String dateStr = file['created_at'] ?? '';
 
@@ -97,7 +98,9 @@ class InstructorRecentFilesScreen extends StatelessWidget {
     IconData icon = _getIconForFile(name);
     Color iconColor = _getColorForFile(name);
 
-    return Container(
+    return GestureDetector(
+      onTap: () => _openRemoteFile(context, file),
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -141,6 +144,7 @@ class InstructorRecentFilesScreen extends StatelessWidget {
           const Icon(Icons.more_vert_rounded, color: Colors.black26),
         ],
       ),
+      ),
     );
   }
 
@@ -168,4 +172,21 @@ class InstructorRecentFilesScreen extends StatelessWidget {
     if (ext == 'mp4') return Colors.orange;
     return const Color(0xFF05398F);
   }
+
+  Future<void> _openRemoteFile(BuildContext context, dynamic fileItem) async {
+    final ApiService apiService = ApiService();
+    final urlStr = fileItem['file_path'] ?? fileItem['url'];
+    if (urlStr == null) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("File not found")));
+      return;
+    }
+    
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening file...")));
+    try {
+      await apiService.downloadAndOpenFile(urlStr, context: context, fileName: fileItem['name']);
+    } catch (e) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
 }
+
