@@ -84,6 +84,7 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
       appBar: AppBar(
         backgroundColor: isSelectionMode ? const Color(0xFF05398F) : const Color(0xFFF4F7FC),
         elevation: 0,
+        automaticallyImplyLeading: false,
         leading: isSelectionMode 
           ? IconButton(
               icon: const Icon(Icons.close_rounded, color: Colors.white),
@@ -98,10 +99,7 @@ class _StudentDownloadsScreenState extends State<StudentDownloadsScreen> {
                   _searchController.clear();
                 }),
               )
-            : IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF05398F)),
-                onPressed: () => Navigator.pop(context),
-              ),
+            : null,
         title: isSelectionMode 
           ? Text("${_selectedFilePaths.length} Selected", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold))
           : _isSearching

@@ -456,7 +456,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(_courses.isNotEmpty ? "Continue Learning" : "Join a Course", style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
-                const Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: 20),
+                const SizedBox.shrink(),
               ],
             ),
             const Spacer(),
@@ -496,22 +496,6 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                       Center(
                         child: Text("${(progress * 100).toInt()}%", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                       ),
-                      // Add 3 small stars inside or around the circular progress
-                      ...[0.5, 0.75, 1.0].map((milestone) {
-                        bool completed = progress >= milestone;
-                        // Positioning some small star indicators inside the circle
-                        return Positioned(
-                          top: milestone == 0.75 ? 0 : null,
-                          bottom: milestone == 1.0 ? 0 : null,
-                          left: milestone == 0.5 ? 0 : null,
-                          right: milestone == 0.5 ? 0 : null,
-                          child: Icon(
-                            Icons.star_rounded, 
-                            size: 12, 
-                            color: completed ? Colors.white : Colors.white.withOpacity(0.3)
-                          ),
-                        );
-                      }),
                     ],
                   ),
                 ),
