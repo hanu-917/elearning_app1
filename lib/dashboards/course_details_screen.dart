@@ -122,6 +122,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening guide...")));
     try {
+      if (!_isInstructor) await _apiService.logReadingDuration(_currentCourse['id'].toString(), 'guide', 3600); // Mock 1h progression
       await _apiService.downloadAndOpenFile(urlStr, context: context, fileName: "Course Guide");
     } catch (e) {
       if (mounted) {
@@ -491,6 +492,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Downloading and opening material...")));
     try {
+      if (!_isInstructor) await _apiService.logReadingDuration(_currentCourse['id'].toString(), material['id'].toString(), 3600); // Mock 1h progression
       await _apiService.downloadAndOpenFile(urlStr, context: context, fileName: material['title']);
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
@@ -656,6 +658,53 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
     return Icons.description_rounded;
   }
 
+  Widget _buildProgressBarWithMilestones(double progress, Color color) {
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.centerLeft,
+          clipBehavior: Clip.none,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: color.withOpacity(0.1),
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+                minHeight: 12,
+              ),
+            ),
+            _buildMilestoneMarker(0.5, progress >= 0.5, color),
+            _buildMilestoneMarker(0.75, progress >= 0.75, color),
+            _buildMilestoneMarker(1.0, progress >= 1.0, color),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMilestoneMarker(double milestone, bool completed, Color color) {
+    return Positioned(
+      left: 0,
+      right: 0,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          double position = (constraints.maxWidth * milestone) - 10;
+          return Container(
+            alignment: Alignment.centerLeft,
+            padding: EdgeInsets.only(left: position > 0 ? position : 0),
+            child: Icon(
+              Icons.star_rounded, 
+              size: 20, 
+              color: completed ? color : Colors.grey.withOpacity(0.4),
+              shadows: completed ? [Shadow(color: color.withOpacity(0.4), blurRadius: 4)] : null,
+            ),
+          );
+        }
+      ),
+    );
+  }
+
   Widget _buildGoalCard(dynamic goal) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
@@ -704,7 +753,7 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
             children: [
               if (goal['target_hours'] != null)
                 Chip(
-                  label: Text('${goal['target_hours']} Hours Reading', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  label: Text('${goal['progress_hours'] ?? '0'} / ${goal['target_hours']} Hours', style: const TextStyle(fontWeight: FontWeight.bold)),
                   backgroundColor: widget.themeColor.withOpacity(0.1),
                   side: BorderSide.none,
                 ),
@@ -715,7 +764,15 @@ class _CourseDetailsScreenState extends State<CourseDetailsScreen> {
                   side: BorderSide.none,
                 ),
             ],
-          )
+          ),
+          if (goal['target_hours'] != null) ...[
+            const SizedBox(height: 16),
+            _buildProgressBarWithMilestones(
+              (double.tryParse(goal['progress_hours']?.toString() ?? '0') ?? 0) / 
+              (double.tryParse(goal['target_hours']?.toString() ?? '1') ?? 1),
+              widget.themeColor,
+            ),
+          ],
         ],
       ),
     );

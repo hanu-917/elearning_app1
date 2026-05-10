@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import '../auth/welcome_screen.dart';
 import 'student_profile_settings_screen.dart';
 import 'help_support_screen.dart';
+import '../services/api_service.dart';
 
 
 class StudentProfileScreen extends StatefulWidget {
@@ -25,6 +26,8 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
   String? _profileImagePath;
   bool _isLoading = true;
   bool _isOnline = true; // Assume online if the user is in the profile screen
+  int _totalStars = 0;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -46,6 +49,13 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         _profileImagePath = prefs.getString('profile_image_path');
         _isLoading = false;
       });
+      // Fetch stars from backend
+      try {
+        final stars = await _apiService.getStudentStarCount();
+        if (mounted) setState(() => _totalStars = stars);
+      } catch (e) {
+        print("Error fetching profile stars: $e");
+      }
     }
   }
 
@@ -89,6 +99,32 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
           "Profile",
           style: TextStyle(color: Color(0xFF05398F), fontSize: 24, fontWeight: FontWeight.bold)
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3))
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star_rounded, color: Colors.orange, size: 20),
+                    const SizedBox(width: 4),
+                    Text(
+                      "$_totalStars",
+                      style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(

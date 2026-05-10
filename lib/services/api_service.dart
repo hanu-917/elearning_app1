@@ -18,6 +18,11 @@ class ApiService {
     return "http://localhost:5000/api";
   }
 
+  Future<String?> _getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('auth_token');
+  }
+
   Future<Map<String, dynamic>> login(String email, String password) async {
     print("Using baseUrl: $baseUrl");
     try {
@@ -2216,5 +2221,64 @@ class ApiService {
     } catch (e) {
       throw Exception('Server Error: $e');
     }
+  }
+
+  Future<List<dynamic>> getMyGoals() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) throw Exception("You are not logged in");
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/goals/student/my-goals'),
+        headers: {"Authorization": "Bearer $token"},
+      );
+
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return data; 
+      } else {
+        throw Exception(data['message'] ?? 'Failed to load goals');
+      }
+    } catch (e) {
+      throw Exception('Server Error: $e');
+    }
+  }
+
+  Future<void> logReadingDuration(String courseId, String materialId, int durationSeconds) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      if (token == null) return;
+
+      await http.post(
+        Uri.parse('$baseUrl/goals/log-reading'),
+        headers: {"Authorization": "Bearer $token", "Content-Type": "application/json"},
+        body: jsonEncode({
+          "courseId": courseId,
+          "materialId": materialId,
+          "durationSeconds": durationSeconds
+        })
+      );
+    } catch (e) {
+      print("Failed to log reading duration: $e");
+    }
+  }
+
+  Future<int> getStudentStarCount() async {
+    final token = await _getToken();
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/goals/student/star-count'),
+        headers: {"Authorization": "Bearer $token"},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['total_stars'] ?? 0;
+      }
+    } catch (e) {
+      print("Error fetching stars: $e");
+    }
+    return 0;
   }
 }

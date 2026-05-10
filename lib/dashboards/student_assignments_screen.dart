@@ -15,12 +15,13 @@ class _StudentAssignmentsScreenState extends State<StudentAssignmentsScreen> wit
   final ApiService _apiService = ApiService();
   late TabController _tabController;
   List<dynamic> _assignments = [];
+  List<dynamic> _goals = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     DateHelper.init().then((_) {
       if (mounted) {
         _fetchAssignments();
@@ -44,9 +45,11 @@ class _StudentAssignmentsScreenState extends State<StudentAssignmentsScreen> wit
     setState(() => _isLoading = true);
     try {
       final tasks = await _apiService.getStudentAssignments();
+      final goals = await _apiService.getMyGoals();
       if (mounted) {
         setState(() {
           _assignments = tasks;
+          _goals = goals;
           _isLoading = false;
         });
       }
@@ -88,8 +91,9 @@ class _StudentAssignmentsScreenState extends State<StudentAssignmentsScreen> wit
           indicatorColor: const Color(0xFF09AEF5),
           indicatorWeight: 3,
           tabs: [
-            Tab(text: "Pending (${pending.length})"),
+            Tab(text: "Tasks (${pending.length})"),
             Tab(text: "Finished (${finished.length})"),
+            Tab(text: "Goals (${_goals.length})"),
           ],
         ),
       ),
@@ -100,6 +104,7 @@ class _StudentAssignmentsScreenState extends State<StudentAssignmentsScreen> wit
             children: [
               _buildList(pending, isPending: true),
               _buildList(finished, isPending: false),
+              _buildGoalList(_goals),
             ],
           ),
     );
@@ -125,6 +130,121 @@ class _StudentAssignmentsScreenState extends State<StudentAssignmentsScreen> wit
       padding: const EdgeInsets.all(20),
       itemCount: list.length,
       itemBuilder: (context, index) => _buildAssignmentItem(list[index]),
+    );
+  }
+
+  Widget _buildGoalList(List<dynamic> list) {
+    if (list.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.star_outline_rounded, size: 60, color: Colors.grey.withOpacity(0.3)),
+            const SizedBox(height: 16),
+            const Text("No active goals.", style: TextStyle(color: Colors.grey, fontSize: 16)),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: list.length,
+      itemBuilder: (context, index) => _buildGoalItem(list[index]),
+    );
+  }
+
+  Widget _buildProgressBarWithMilestones(double progress, Color color) {
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.centerLeft,
+          clipBehavior: Clip.none,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: color.withOpacity(0.1),
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+                minHeight: 12,
+              ),
+            ),
+            _buildMilestoneMarker(0.5, progress >= 0.5, color),
+            _buildMilestoneMarker(0.75, progress >= 0.75, color),
+            _buildMilestoneMarker(1.0, progress >= 1.0, color),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMilestoneMarker(double milestone, bool completed, Color color) {
+    return Positioned(
+      left: 0,
+      right: 0,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          double position = (constraints.maxWidth * milestone) - 10;
+          return Container(
+            alignment: Alignment.centerLeft,
+            padding: EdgeInsets.only(left: position > 0 ? position : 0),
+            child: Icon(
+              Icons.star_rounded, 
+              size: 20, 
+              color: completed ? color : Colors.grey.withOpacity(0.4),
+              shadows: completed ? [Shadow(color: color.withOpacity(0.4), blurRadius: 4)] : null,
+            ),
+          );
+        }
+      ),
+    );
+  }
+
+  Widget _buildGoalItem(Map<String, dynamic> goal) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(goal['title'], style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+            const SizedBox(height: 4),
+            Text(goal['course_title'] ?? 'Course', style: TextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+            if (goal['description'] != null && goal['description'].isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(goal['description'], style: const TextStyle(color: Colors.black87, fontSize: 13)),
+            ],
+            const SizedBox(height: 15),
+            Wrap(
+              spacing: 10,
+              runSpacing: 8,
+              children: [
+                _buildBadge(Icons.star_rounded, "GOAL: ${goal['recurrence']?.toUpperCase() ?? 'WEEKLY'}", Colors.orange),
+                if (goal['target_hours'] != null)
+                  _buildBadge(Icons.timer_rounded, "${goal['progress_hours'] ?? '0'} / ${goal['target_hours']} HRS", Colors.blue),
+                if (goal['target_score'] != null)
+                  _buildBadge(Icons.score_rounded, "${goal['target_score']}% SCORE", Colors.green),
+              ],
+            ),
+            if (goal['target_hours'] != null) ...[
+              const SizedBox(height: 16),
+              _buildProgressBarWithMilestones(
+                (double.tryParse(goal['progress_hours']?.toString() ?? '0') ?? 0) / 
+                (double.tryParse(goal['target_hours']?.toString() ?? '1') ?? 1),
+                Colors.orange,
+              ),
+            ],
+          ]
+        )
+      )
     );
   }
 

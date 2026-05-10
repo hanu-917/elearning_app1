@@ -28,6 +28,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   bool _isTasksLoading = true;
   List<Map<String, dynamic>> _todaySchedule = [];
   List<dynamic> _pendingTasks = [];
+  List<dynamic> _myGoals = [];
   List<dynamic> _courses = [];
   bool _isLoadingCourses = true;
   int _systemUnread = 0;
@@ -106,13 +107,27 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     setState(() => _isTasksLoading = true);
     try {
       final tasks = await _apiService.getStudentAssignments();
+      final goals = await _apiService.getMyGoals();
       if (mounted) {
         setState(() {
           _pendingTasks = tasks;
+          _myGoals = goals.map((g) => {
+            'id': 'goal_${g['id']}',
+            'title': g['title'],
+            'course_title': g['course_title'] ?? 'Course Goal',
+            'due_date': null, // Goals use recurrence, not exact due dates in this context
+            'recurrence': g['recurrence'],
+            'is_group_assignment': false,
+            'is_submitted': false,
+            'is_goal': true,
+            'description': g['description'],
+            'progress_hours': g['progress_hours'],
+            'target_hours': g['target_hours'],
+          }).toList();
         });
       }
     } catch (e) {
-      debugPrint("Error fetching tasks: $e");
+      debugPrint("Error fetching tasks/goals: $e");
     } finally {
       if (mounted) setState(() => _isTasksLoading = false);
     }
@@ -259,10 +274,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                                child: CircularProgressIndicator(strokeWidth: 3),
                              ),
                            )
-                        else if (_pendingTasks.isEmpty || _pendingTasks.where((task) {
-                            final isSub = task['is_submitted'];
-                            return isSub == false || isSub == null || isSub == 0 || isSub == 'false';
-                          }).isEmpty)
+                        else if (_pendingTasks.isEmpty && _myGoals.isEmpty)
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),
@@ -270,13 +282,14 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16)
                             ),
-                            child: const Center(child: Text("No pending assignments", style: TextStyle(color: Colors.grey))),
+                            child: const Center(child: Text("No pending assignments or goals", style: TextStyle(color: Colors.grey))),
                           )
                         else
-                          ..._pendingTasks.where((task) {
+                          ...[..._myGoals, ..._pendingTasks].where((task) {
+                            if (task['is_goal'] == true) return true;
                             final isSub = task['is_submitted'];
                             return isSub == false || isSub == null || isSub == 0 || isSub == 'false';
-                          }).take(5).map((task) => _buildTaskItem(task)),
+                          }).take(5).map((task) => task['is_goal'] == true ? _buildGoalItem(task) : _buildTaskItem(task)),
                       ],
                     ),
                   ),
@@ -404,7 +417,26 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     if (_courses.isNotEmpty) {
       displayTitle = _courses.first['title']?.toString() ?? "Course Hub";
       displaySubtitle = _courses.first['course_code']?.toString() ?? "My Enrolled Course";
-      // progress = 0.0; // Keep at 0 until we have real logic
+      
+      final activeGoals = _myGoals.where((g) => g['target_hours'] != null).toList();
+      if (activeGoals.isNotEmpty) {
+        double totalTarget = 0.0;
+        double totalProgress = 0.0;
+        for (var g in activeGoals) {
+          totalTarget += double.tryParse(g['target_hours'].toString()) ?? 0.0;
+          
+          // Safer check for progress_hours to avoid null errors
+          String? progStr;
+          if (g.containsKey('goal') && g['goal'] != null) {
+            progStr = g['goal']['progress_hours']?.toString();
+          }
+          progStr ??= g['progress_hours']?.toString();
+          
+          totalProgress += double.tryParse(progStr ?? '0.0') ?? 0.0;
+        }
+        if (totalTarget > 0) progress = totalProgress / totalTarget;
+        if (progress > 1.0) progress = 1.0;
+      }
     }
 
     return Padding(
@@ -464,6 +496,22 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                       Center(
                         child: Text("${(progress * 100).toInt()}%", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
                       ),
+                      // Add 3 small stars inside or around the circular progress
+                      ...[0.5, 0.75, 1.0].map((milestone) {
+                        bool completed = progress >= milestone;
+                        // Positioning some small star indicators inside the circle
+                        return Positioned(
+                          top: milestone == 0.75 ? 0 : null,
+                          bottom: milestone == 1.0 ? 0 : null,
+                          left: milestone == 0.5 ? 0 : null,
+                          right: milestone == 0.5 ? 0 : null,
+                          child: Icon(
+                            Icons.star_rounded, 
+                            size: 12, 
+                            color: completed ? Colors.white : Colors.white.withOpacity(0.3)
+                          ),
+                        );
+                      }),
                     ],
                   ),
                 ),
@@ -561,6 +609,69 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     );
   }
 
+  Widget _buildProgressBarWithMilestones(double progress, Color color) {
+    return Column(
+      children: [
+        Stack(
+          alignment: Alignment.centerLeft,
+          clipBehavior: Clip.none,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: color.withOpacity(0.1),
+                valueColor: AlwaysStoppedAnimation<Color>(color),
+                minHeight: 12,
+              ),
+            ),
+            // Progress Markers (Stars)
+            ...[0.5, 0.75, 1.0].map((milestone) {
+              bool completed = progress >= milestone;
+              return Positioned(
+                left: null,
+                right: null,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // This is tricky inside Positioned without width. 
+                    // We'll use a simpler approach with the Stack.
+                    return const SizedBox.shrink();
+                  }
+                ),
+              );
+            }),
+            // Correct Positioning approach for markers
+            _buildMilestoneMarker(0.5, progress >= 0.5, color),
+            _buildMilestoneMarker(0.75, progress >= 0.75, color),
+            _buildMilestoneMarker(1.0, progress >= 1.0, color),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMilestoneMarker(double milestone, bool completed, Color color) {
+    return Positioned(
+      left: 0,
+      right: 0,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          double position = (constraints.maxWidth * milestone) - 10;
+          return Container(
+            alignment: Alignment.centerLeft,
+            padding: EdgeInsets.only(left: position > 0 ? position : 0),
+            child: Icon(
+              Icons.star_rounded, 
+              size: 20, 
+              color: completed ? color : Colors.grey.withOpacity(0.4),
+              shadows: completed ? [Shadow(color: color.withOpacity(0.4), blurRadius: 4)] : null,
+            ),
+          );
+        }
+      ),
+    );
+  }
+
   Widget _buildTaskItem(Map<String, dynamic> task) {
     final String title = task['title'].toString();
     final String courseTitle = task['course_title']?.toString() ?? "General";
@@ -648,10 +759,63 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
                       shape: BoxShape.circle,
                     ),
                   ),
-                const Icon(Icons.chevron_right_rounded, color: Colors.black26),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoalItem(Map<String, dynamic> goal) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.star_rounded, color: Colors.orange, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(goal['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
+                  const SizedBox(height: 2),
+                  Text(goal['course_title'] ?? "Course", style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(10)
+                    ),
+                    child: Text("GOAL: ${goal['recurrence']?.toUpperCase() ?? 'WEEKLY'}", style: const TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+                  ),
+                  if (goal['target_hours'] != null) ...[
+                    const SizedBox(height: 12),
+                    _buildProgressBarWithMilestones(
+                      (double.tryParse(goal['progress_hours']?.toString() ?? '0') ?? 0) / 
+                      (double.tryParse(goal['target_hours']?.toString() ?? '1') ?? 1),
+                      Colors.orange,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -164,13 +164,13 @@ class _StudentMaterialsScreenState extends State<StudentMaterialsScreen> {
             ],
           ),
         ),
-        ...materials.map((m) => _buildMaterialCard(m)).toList(),
+        ...materials.map((m) => _buildMaterialCard(m, courseTitle)).toList(),
         const SizedBox(height: 20),
       ],
     );
   }
 
-  Widget _buildMaterialCard(dynamic material) {
+  Widget _buildMaterialCard(dynamic material, String courseTitle) {
     String title = material['title'] ?? 'Untitled Material';
     String description = material['description'] ?? '';
     String fileType = material['file_type'] ?? '';
@@ -236,7 +236,13 @@ class _StudentMaterialsScreenState extends State<StudentMaterialsScreen> {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
-              onTap: onTap,
+              onTap: () {
+                final courseId = _courses.firstWhere((c) => c['title'] == courseTitle, orElse: () => {'id': ''})['id'].toString();
+                if (courseId.isNotEmpty) {
+                  _apiService.logReadingDuration(courseId, material['id']?.toString() ?? 'unknown', 3600);
+                }
+                if (onTap != null) onTap();
+              },
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(

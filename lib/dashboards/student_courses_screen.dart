@@ -17,6 +17,7 @@ class StudentCoursesScreen extends StatefulWidget {
 class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
   final ApiService _apiService = ApiService();
   List<dynamic> _courses = [];
+  List<dynamic> _myGoals = [];
   bool _isLoading = true;
 
   final List<Color> _cardColors = [
@@ -42,13 +43,17 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
   Future<void> _fetchCourses() async {
     try {
       final courses = await _apiService.getStudentCourses();
-      setState(() {
-        _courses = courses;
-        _isLoading = false;
-      });
+      final goals = await _apiService.getMyGoals();
+      if (mounted) {
+        setState(() {
+          _courses = courses;
+          _myGoals = goals;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       print(e);
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -99,7 +104,7 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                               context,
                               MaterialPageRoute(
                                   builder: (context) =>
-                                      StudentAllCoursesScreen(courses: _courses)),
+                                      StudentAllCoursesScreen(courses: _courses, myGoals: _myGoals)),
                             );
                           },
                           child: const Text("See All",
@@ -208,6 +213,19 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
   }
 
   Widget _buildCourseCard(dynamic course, Color darkColor, Color lightColor) {
+    final courseGoals = _myGoals.where((g) => g['course_id'].toString() == course['id'].toString() && g['target_hours'] != null).toList();
+    double progress = 0.0;
+    if (courseGoals.isNotEmpty) {
+      double totalTarget = 0.0;
+      double totalProgress = 0.0;
+      for (var g in courseGoals) {
+        totalTarget += double.tryParse(g['target_hours'].toString()) ?? 0.0;
+        totalProgress += double.tryParse(g['progress_hours']?.toString() ?? '0.0') ?? 0.0;
+      }
+      if (totalTarget > 0) progress = totalProgress / totalTarget;
+      if (progress > 1.0) progress = 1.0;
+    }
+    
     return Container(
       width: 170,
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -263,14 +281,14 @@ class _StudentCoursesScreenState extends State<StudentCoursesScreen> {
                       style: TextStyle(fontSize: 12, color: lightColor, fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      "50%",
+                      courseGoals.isNotEmpty ? "${(progress * 100).toInt()}% (Goal Progress)" : "0%",
                       style: TextStyle(fontSize: 12, color: darkColor, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
                 LinearProgressIndicator(
-                  value: 0.5,
+                  value: progress,
                   backgroundColor: lightColor.withOpacity(0.2),
                   valueColor: AlwaysStoppedAnimation<Color>(darkColor),
                   borderRadius: BorderRadius.circular(5),

@@ -3,8 +3,9 @@ import 'course_details_screen.dart';
 
 class StudentAllCoursesScreen extends StatelessWidget {
   final List<dynamic> courses;
+  final List<dynamic> myGoals;
 
-  const StudentAllCoursesScreen({super.key, required this.courses});
+  const StudentAllCoursesScreen({super.key, required this.courses, this.myGoals = const []});
 
   final List<Color> _cardColors = const [
     Color(0xFF05398F),
@@ -61,6 +62,19 @@ class StudentAllCoursesScreen extends StatelessWidget {
   }
 
   Widget _buildFullWidthCourseCard(BuildContext context, dynamic course, Color darkColor, Color lightColor) {
+    final courseGoals = myGoals.where((g) => g['course_id'].toString() == course['id'].toString() && g['target_hours'] != null).toList();
+    double progress = 0.0;
+    if (courseGoals.isNotEmpty) {
+      double totalTarget = 0.0;
+      double totalProgress = 0.0;
+      for (var g in courseGoals) {
+        totalTarget += double.tryParse(g['target_hours'].toString()) ?? 0.0;
+        totalProgress += double.tryParse(g['progress_hours']?.toString() ?? '0.0') ?? 0.0;
+      }
+      if (totalTarget > 0) progress = totalProgress / totalTarget;
+      if (progress > 1.0) progress = 1.0;
+    }
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
@@ -143,9 +157,9 @@ class StudentAllCoursesScreen extends StatelessWidget {
                             ),
                           ),
                           const Spacer(),
-                          const Text(
-                            "50% Complete",
-                            style: TextStyle(
+                          Text(
+                            courseGoals.isNotEmpty ? "${(progress * 100).toInt()}% (Goal Progress)" : "0%",
+                            style: const TextStyle(
                               fontSize: 12,
                               color: Colors.black45,
                               fontWeight: FontWeight.w600,
@@ -155,7 +169,7 @@ class StudentAllCoursesScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       LinearProgressIndicator(
-                        value: 0.5,
+                        value: progress,
                         backgroundColor: lightColor.withOpacity(0.1),
                         valueColor: AlwaysStoppedAnimation<Color>(darkColor),
                         borderRadius: BorderRadius.circular(10),
