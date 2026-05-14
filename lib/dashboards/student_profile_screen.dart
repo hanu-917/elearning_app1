@@ -1,16 +1,20 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'feedback_screen.dart';
+import 'about_elms_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart'; 
 import '../auth/welcome_screen.dart';
 import 'student_profile_settings_screen.dart';
 import 'help_support_screen.dart';
+import 'privacy_security_screen.dart';
 import '../services/api_service.dart';
 
 
 class StudentProfileScreen extends StatefulWidget {
-  const StudentProfileScreen({super.key});
+  final VoidCallback? onBack;
+  const StudentProfileScreen({super.key, this.onBack});
 
   @override
   State<StudentProfileScreen> createState() => _StudentProfileScreenState();
@@ -95,6 +99,10 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
         backgroundColor: const Color(0xFFF4F7FC),
         elevation: 0,
         centerTitle: false,
+        leading: widget.onBack != null ? IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded, color: Color(0xFF05398F)),
+          onPressed: widget.onBack,
+        ) : null,
         title: const Text(
           "Profile",
           style: TextStyle(color: Color(0xFF05398F), fontSize: 24, fontWeight: FontWeight.bold)
@@ -266,16 +274,21 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _buildProfileOption(Icons.settings_rounded, "Settings", Colors.grey.shade700, onTap: () {
+                  _buildProfileOption(Icons.settings_rounded, "Settings", const Color(0xFF05398F), onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileSettingsScreen()));
                   }),
-                  _buildProfileOption(Icons.security_rounded, "Privacy and Security", Colors.red, onTap: () {}),
-                  _buildProfileOption(Icons.help_outline_rounded, "Help Center", Colors.purple, onTap: () {
+                  _buildProfileOption(Icons.security_rounded, "Privacy and Security", const Color(0xFF09AEF5), onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const PrivacySecurityScreen()));
+                  }),
+                  _buildProfileOption(Icons.help_outline_rounded, "Help Center", Colors.indigo, onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
                   }),
-                  _buildProfileOption(Icons.feedback_outlined, "Send Feedback", Colors.teal, onTap: () {}),
-                  _buildProfileOption(Icons.info_outline_rounded, "About ELMS", Colors.blueGrey, onTap: () {}),
-
+                  _buildProfileOption(Icons.feedback_outlined, "Send Feedback", Colors.teal, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const FeedbackScreen()));
+                  }),
+                  _buildProfileOption(Icons.info_outline_rounded, "About ELMS", Colors.blueGrey, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutElmsScreen()));
+                  }),
                 ],
               ),
             ),
