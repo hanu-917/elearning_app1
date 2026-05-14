@@ -123,6 +123,7 @@ class _StudentScheduleScreenState extends State<StudentScheduleScreen> {
       backgroundColor: const Color(0xFFF4F7FC),
       appBar: AppBar(
         title: const Text('Weekly Schedule', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        systemOverlayStyle: SystemUiOverlayStyle.light,
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(

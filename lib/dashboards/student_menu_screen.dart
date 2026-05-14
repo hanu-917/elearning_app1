@@ -95,7 +95,7 @@ class _StudentMenuScreenState extends State<StudentMenuScreen> {
                 _buildMenuIcon(Icons.download_rounded, "Downloads", const Color(0xFFE1F5FE), Colors.lightBlue, () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentDownloadsScreen()));
                 }),
-                _buildMenuIcon(Icons.quiz_rounded, "Quizzes", const Color(0xFFFCE4EC), Colors.pink, () {
+                _buildMenuIcon(Icons.quiz_rounded, "Quizzes", const Color(0xFFE3F2FD), const Color(0xFF05398F), () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentQuizScreen()));
                 }),
 

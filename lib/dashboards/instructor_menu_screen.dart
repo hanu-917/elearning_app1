@@ -91,7 +91,7 @@ class _InstructorMenuScreenState extends State<InstructorMenuScreen> {
                 _buildMenuIcon(Icons.how_to_reg_rounded, "Attendance", const Color(0xFFE0F2F1), Colors.teal, () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorAttendanceScreen()));
                 }),
-                _buildMenuIcon(Icons.quiz_rounded, "Quizzes", const Color(0xFFFCE4EC), Colors.pink, () {
+                _buildMenuIcon(Icons.quiz_rounded, "Quizzes", const Color(0xFFE3F2FD), const Color(0xFF05398F), () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => const InstructorQuizScreen()));
                 }),
               ],

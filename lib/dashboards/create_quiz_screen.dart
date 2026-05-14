@@ -18,11 +18,13 @@ class CreateQuizScreen extends StatefulWidget {
 class QuestionModel {
   String text;
   int points;
+  String type; // 'multiple_choice', 'true_false', 'short_answer', 'fill_blank'
   List<Map<String, dynamic>> options;
 
   QuestionModel({
     required this.text,
     required this.points,
+    required this.type,
     required this.options,
   });
 }
@@ -48,6 +50,7 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
   void _showQuestionDialog({int? index}) async {
     final textCtrl = TextEditingController();
     final pointsCtrl = TextEditingController(text: "1");
+    String selectedType = 'multiple_choice';
     List<Map<String, dynamic>> options = [
       {"text": "", "correct": false},
       {"text": "", "correct": false},
@@ -56,105 +59,203 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
     ];
 
     if (index != null) {
-      textCtrl.text = _questions[index].text;
-      pointsCtrl.text = _questions[index].points.toString();
-      options = _questions[index].options.map((o) => Map<String, dynamic>.from(o)).toList();
-    }
-
-    bool isFormValid() {
-      return textCtrl.text.trim().isNotEmpty &&
-          options.any((o) => o["correct"] == true);
+      final q = _questions[index];
+      textCtrl.text = q.text;
+      pointsCtrl.text = q.points.toString();
+      selectedType = q.type;
+      options = q.options.map((o) => Map<String, dynamic>.from(o)).toList();
     }
 
     final result = await showDialog<QuestionModel>(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: Text(index == null ? "Add Question" : "Edit Question"),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                    controller: textCtrl,
-                    onChanged: (val) => setDialogState(() {}),
-                    decoration: const InputDecoration(
-                        labelText: "Question*", border: OutlineInputBorder()),
-                    maxLines: 3),
-                const SizedBox(height: 12),
-                TextField(
-                    controller: pointsCtrl,
-                    decoration: const InputDecoration(
-                        labelText: "Points", border: OutlineInputBorder()),
-                    keyboardType: TextInputType.number),
-                const SizedBox(height: 16),
-                const Text("Options (tap radio to mark correct):",
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                ...List.generate(options.length, (i) {
-                  final ctrl = TextEditingController(text: options[i]["text"]);
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        Radio<int>(
-                          value: i,
-                          groupValue:
-                              options.indexWhere((o) => o["correct"] == true),
-                          onChanged: (v) {
-                            setDialogState(() {
-                              for (var o in options) {
-                                o["correct"] = false;
-                              }
-                              options[i]["correct"] = true;
-                            });
-                          },
-                        ),
-                        Expanded(
-                          child: TextField(
-                            controller: ctrl,
-                            decoration: InputDecoration(
-                                hintText: "Option ${i + 1}",
-                                isDense: true,
-                                border: const OutlineInputBorder()),
-                            onChanged: (val) {
-                              options[i]["text"] = val;
-                              setDialogState(() {});
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text("Cancel")),
-            ElevatedButton(
-                onPressed: isFormValid()
-                    ? () {
-                        final validOptions = options
-                            .where((o) => (o["text"] as String).trim().isNotEmpty)
-                            .toList();
-                        if (validOptions.isEmpty) return;
+        builder: (ctx, setDialogState) {
+          bool isFormValid() {
+            if (textCtrl.text.trim().isEmpty) return false;
+            if (selectedType == 'multiple_choice' || selectedType == 'true_false') {
+              return options.any((o) => o["correct"] == true && (o["text"] as String).trim().isNotEmpty);
+            }
+            if (selectedType == 'short_answer' || selectedType == 'fill_blank') {
+              return options.isNotEmpty && (options[0]["text"] as String).trim().isNotEmpty;
+            }
+            return false;
+          }
 
-                        Navigator.pop(
-                          ctx,
-                          QuestionModel(
-                            text: textCtrl.text.trim(),
-                            points: int.tryParse(pointsCtrl.text) ?? 1,
-                            options: options,
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text(index == null ? "Add Question" : "Edit Question", style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.9,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: selectedType,
+                      decoration: const InputDecoration(labelText: "Question Type", border: OutlineInputBorder()),
+                      items: const [
+                        DropdownMenuItem(value: 'multiple_choice', child: Text("Multiple Choice")),
+                        DropdownMenuItem(value: 'true_false', child: Text("True / False")),
+                        DropdownMenuItem(value: 'short_answer', child: Text("Short Answer")),
+                        DropdownMenuItem(value: 'fill_blank', child: Text("Fill in the Blank")),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          setDialogState(() {
+                            selectedType = val;
+                            if (selectedType == 'true_false') {
+                              options = [
+                                {"text": "True", "correct": true},
+                                {"text": "False", "correct": false},
+                              ];
+                            } else if (selectedType == 'multiple_choice') {
+                              options = [
+                                {"text": "", "correct": false},
+                                {"text": "", "correct": false},
+                                {"text": "", "correct": false},
+                                {"text": "", "correct": false},
+                              ];
+                            } else {
+                              options = [
+                                {"text": "", "correct": true},
+                              ];
+                            }
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                        controller: textCtrl,
+                        onChanged: (val) => setDialogState(() {}),
+                        decoration: const InputDecoration(
+                            labelText: "Question Text*", border: OutlineInputBorder(), alignLabelWithHint: true),
+                        maxLines: 3),
+                    const SizedBox(height: 12),
+                    TextField(
+                        controller: pointsCtrl,
+                        decoration: const InputDecoration(
+                            labelText: "Points", border: OutlineInputBorder()),
+                        keyboardType: TextInputType.number),
+                    const SizedBox(height: 20),
+                    
+                    if (selectedType == 'multiple_choice') ...[
+                      const Text("Options (mark the correct one):", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      ...List.generate(options.length, (i) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Radio<int>(
+                                value: i,
+                                groupValue: options.indexWhere((o) => o["correct"] == true),
+                                activeColor: const Color(0xFF09AEF5),
+                                onChanged: (v) {
+                                  setDialogState(() {
+                                    for (var o in options) o["correct"] = false;
+                                    options[i]["correct"] = true;
+                                  });
+                                },
+                              ),
+                              Expanded(
+                                child: TextField(
+                                  decoration: InputDecoration(
+                                      hintText: "Option ${i + 1}",
+                                      isDense: true,
+                                      border: const OutlineInputBorder()),
+                                  controller: TextEditingController.fromValue(TextEditingValue(
+                                    text: options[i]["text"],
+                                    selection: TextSelection.collapsed(offset: options[i]["text"].length),
+                                  )),
+                                  onChanged: (val) {
+                                    options[i]["text"] = val;
+                                    setDialogState(() {});
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
                         );
-                      }
-                    : null,
-                child: Text(index == null ? "Add" : "Save")),
-          ],
-        ),
+                      }),
+                    ] else if (selectedType == 'true_false') ...[
+                      const Text("Correct Answer:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: RadioListTile<int>(
+                              title: const Text("True"),
+                              value: 0,
+                              groupValue: options.indexWhere((o) => o["correct"] == true),
+                              onChanged: (v) {
+                                setDialogState(() {
+                                  options[0]["correct"] = true;
+                                  options[1]["correct"] = false;
+                                });
+                              },
+                            ),
+                          ),
+                          Expanded(
+                            child: RadioListTile<int>(
+                              title: const Text("False"),
+                              value: 1,
+                              groupValue: options.indexWhere((o) => o["correct"] == true),
+                              onChanged: (v) {
+                                setDialogState(() {
+                                  options[0]["correct"] = false;
+                                  options[1]["correct"] = true;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ] else ...[
+                      const Text("Correct Answer:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      const SizedBox(height: 8),
+                      TextField(
+                        decoration: const InputDecoration(
+                            hintText: "Enter the correct answer text",
+                            border: OutlineInputBorder()),
+                        onChanged: (val) {
+                          options[0]["text"] = val;
+                          setDialogState(() {});
+                        },
+                        controller: TextEditingController.fromValue(TextEditingValue(
+                          text: options[0]["text"],
+                          selection: TextSelection.collapsed(offset: options[0]["text"].length),
+                        )),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text("Cancel", style: TextStyle(color: Colors.grey))),
+              ElevatedButton(
+                  onPressed: isFormValid()
+                      ? () {
+                          Navigator.pop(
+                            ctx,
+                            QuestionModel(
+                              text: textCtrl.text.trim(),
+                              points: int.tryParse(pointsCtrl.text) ?? 1,
+                              type: selectedType,
+                              options: options,
+                            ),
+                          );
+                        }
+                      : null,
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF05398F)),
+                  child: Text(index == null ? "Add" : "Save", style: const TextStyle(color: Colors.white))),
+            ],
+          );
+        },
       ),
     );
 
@@ -196,7 +297,7 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
 
         await _apiService.addQuizQuestion(quizId, {
           "question_text": q.text,
-          "question_type": "multiple_choice",
+          "question_type": q.type,
           "points": q.points,
           "order_index": i,
           "options": validOptions
@@ -225,10 +326,15 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC),
       appBar: AppBar(
-        title: const Text("Create Quiz"),
-        backgroundColor: const Color(0xFFF4F7FC),
+        title: const Text("Create Quiz", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(colors: [Color(0xFF09AEF5), Color(0xFF05398F)]),
+          ),
+        ),
         elevation: 0,
-        foregroundColor: Colors.black87,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isSaving
           ? const Center(child: CircularProgressIndicator())
@@ -304,8 +410,12 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
                             fontSize: 18, fontWeight: FontWeight.bold)),
                     ElevatedButton.icon(
                       onPressed: () => _showQuestionDialog(),
-                      icon: const Icon(Icons.add),
-                      label: const Text("Add Question"),
+                      icon: const Icon(Icons.add, color: Colors.white),
+                      label: const Text("Add Question", style: TextStyle(color: Colors.white)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF05398F),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
                   ],
                 ),
@@ -324,8 +434,8 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         onTap: () => _showQuestionDialog(index: index),
-                        title: Text(q.text),
-                        subtitle: Text("${q.points} Points • ${q.options.where((o) => (o['text'] as String).trim().isNotEmpty).length} Options"),
+                        title: Text(q.text, style: const TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text("${_formatType(q.type)} • ${q.points} Points"),
                         trailing: IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
                           onPressed: () {
@@ -344,17 +454,27 @@ class _CreateQuizScreenState extends State<CreateQuizScreen> {
                   child: ElevatedButton(
                     onPressed: _saveQuiz,
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF05398F),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: const Text("Save Quiz",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                   ),
                 ),
                 const SizedBox(height: 20),
               ],
             ),
     );
+  }
+  String _formatType(String type) {
+    switch (type) {
+      case 'multiple_choice': return "Multiple Choice";
+      case 'true_false': return "True / False";
+      case 'short_answer': return "Short Answer";
+      case 'fill_blank': return "Fill in the Blank";
+      default: return type;
+    }
   }
 }

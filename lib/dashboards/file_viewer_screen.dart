@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
+import 'package:open_filex/open_filex.dart';
 import '../widgets/custom_microsoft_viewer.dart';
 
 class FileViewerScreen extends StatefulWidget {
@@ -19,11 +20,20 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
   List<int>? fileBytes;
   bool isLoading = true;
   bool isLandscape = false;
+  bool isPdfError = false;
+  String pdfErrorMessage = "";
 
   @override
   void initState() {
     super.initState();
     _loadFile();
+    // Default to portrait but let user rotate if they want
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
   }
 
   @override
@@ -83,21 +93,46 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
     final isPdf = ext == 'pdf';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FC), // Use a light grey theme consistent with the app
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(widget.fileName, style: const TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFFF4F7FC),
-        elevation: 0,
+        title: Text(widget.fileName, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16)),
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(colors: [Color(0xFF09AEF5), Color(0xFF05398F)]),
+          ),
+        ),
+        elevation: 2,
+        iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF05398F), size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            icon: Icon(isLandscape ? Icons.screen_lock_portrait_rounded : Icons.screen_lock_landscape_rounded, color: const Color(0xFF05398F)),
-            onPressed: _toggleOrientation,
-            tooltip: isLandscape ? "Switch to Portrait" : "Switch to Landscape",
+            icon: const Icon(Icons.open_in_new_rounded, color: Colors.white),
+            tooltip: "Open in System Viewer",
+            onPressed: () async {
+              try {
+                final result = await OpenFilex.open(widget.filePath);
+                if (result.type != ResultType.done) {
+                  throw Exception(result.message);
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Could not open in system viewer: $e")),
+                  );
+                }
+              }
+            },
           ),
+          if (isPdf)
+            IconButton(
+              icon: Icon(isLandscape ? Icons.screen_lock_portrait_rounded : Icons.screen_lock_landscape_rounded, color: Colors.white),
+              onPressed: _toggleOrientation,
+              tooltip: isLandscape ? "Switch to Portrait" : "Switch to Landscape",
+            ),
         ],
       ),
       body: isLoading
@@ -143,11 +178,42 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
   }
 
   Widget _buildPdfViewer() {
+    if (isPdfError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline_rounded, size: 60, color: Colors.redAccent),
+            const SizedBox(height: 16),
+            Text("Failed to render PDF", style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Text(pdfErrorMessage, textAlign: TextAlign.center, style: const TextStyle(color: Colors.black54)),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () async {
+                await OpenFilex.open(widget.filePath);
+              },
+              icon: const Icon(Icons.open_in_new_rounded),
+              label: const Text("Open in System Viewer"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF05398F),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return PDFView(
       filePath: widget.filePath,
       enableSwipe: true,
       swipeHorizontal: false,
-      autoSpacing: false,
+      autoSpacing: true, // Set to true for better spacing
       pageFling: true,
       pageSnap: true,
       defaultPage: 0,
@@ -158,6 +224,12 @@ class _FileViewerScreenState extends State<FileViewerScreen> {
       },
       onError: (error) {
         debugPrint("PDF Error: $error");
+        if (mounted) {
+          setState(() {
+            isPdfError = true;
+            pdfErrorMessage = error.toString();
+          });
+        }
       },
       onPageError: (page, error) {
         debugPrint("PDF Page Error on $page: $error");

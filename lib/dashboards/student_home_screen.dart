@@ -225,78 +225,96 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FC), // Professional light grayish blue background
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Header Section with our primary gradient
-            _buildHeader(),
-            
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Horizontal Scrollable Cards
-                  _buildHorizontalCards(context),
-                  
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 25.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Grid Menu
-                        const Text("Main Menu", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
-                        const SizedBox(height: 15),
-                        _buildMenuGrid(),
-                        
-                        const SizedBox(height: 30),
-                        const Text("Today's Schedule", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
-                        const SizedBox(height: 15),
-                        if (_isScheduleLoading)
-                          const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(20.0),
-                              child: CircularProgressIndicator(strokeWidth: 3),
-                            ),
-                          )
-                        else if (_todaySchedule.isEmpty)
-                          _buildEmptySchedule()
-                        else
-                          ..._todaySchedule.map((s) => _buildScheduleTask(s['course'], s['time'], s['color'])),
-
-                        const SizedBox(height: 30),
-                        const Text("Pending Tasks", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
-                        const SizedBox(height: 15),
-                        if (_isTasksLoading)
-                          const Center(
-                             child: Padding(
-                               padding: EdgeInsets.all(20.0),
-                               child: CircularProgressIndicator(strokeWidth: 3),
-                             ),
-                           )
-                        else if (_pendingTasks.isEmpty && _myGoals.isEmpty)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16)
-                            ),
-                            child: const Center(child: Text("No pending assignments or goals", style: TextStyle(color: Colors.grey))),
-                          )
-                        else
-                          ...[..._myGoals, ..._pendingTasks].where((task) {
-                            if (task['is_goal'] == true) return true;
-                            final isSub = task['is_submitted'];
-                            return isSub == false || isSub == null || isSub == 0 || isSub == 'false';
-                          }).take(5).map((task) => task['is_goal'] == true ? _buildGoalItem(task) : _buildTaskItem(task)),
-                      ],
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Header Section with our primary gradient
+              _buildHeader(),
+              
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Horizontal Scrollable Cards
+                    _buildHorizontalCards(context),
+                    
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 25.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Grid Menu
+                          const Text("Main Menu", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
+                          const SizedBox(height: 15),
+                          _buildMenuGrid(),
+                          
+                          const SizedBox(height: 30),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text("Today's Schedule", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
+                              TextButton.icon(
+                                onPressed: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentScheduleScreen()));
+                                },
+                                icon: const Text("View Weekly", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF09AEF5))),
+                                label: const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFF09AEF5)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 5),
+                          if (_isScheduleLoading)
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(20.0),
+                                child: CircularProgressIndicator(strokeWidth: 3),
+                              ),
+                            )
+                          else if (_todaySchedule.isEmpty)
+                            _buildEmptySchedule()
+                          else
+                            ..._todaySchedule.map((s) => _buildScheduleTask(s['course'], s['time'], s['color'])),
+  
+                          const SizedBox(height: 30),
+                          const Text("Pending Tasks", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF05398F))),
+                          const SizedBox(height: 15),
+                          if (_isTasksLoading)
+                            const Center(
+                               child: Padding(
+                                 padding: EdgeInsets.all(20.0),
+                                 child: CircularProgressIndicator(strokeWidth: 3),
+                               ),
+                             )
+                          else if (_pendingTasks.isEmpty)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16)
+                              ),
+                              child: const Center(child: Text("No pending assignments", style: TextStyle(color: Colors.grey))),
+                            )
+                          else
+                            ..._pendingTasks.where((task) {
+                              final isSub = task['is_submitted'];
+                              return isSub == false || isSub == null || isSub == 0 || isSub == 'false';
+                            }).take(5).map((task) => _buildTaskItem(task)),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -593,68 +611,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     );
   }
 
-  Widget _buildProgressBarWithMilestones(double progress, Color color) {
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.centerLeft,
-          clipBehavior: Clip.none,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: progress,
-                backgroundColor: color.withOpacity(0.1),
-                valueColor: AlwaysStoppedAnimation<Color>(color),
-                minHeight: 12,
-              ),
-            ),
-            // Progress Markers (Stars)
-            ...[0.5, 0.75, 1.0].map((milestone) {
-              bool completed = progress >= milestone;
-              return Positioned(
-                left: null,
-                right: null,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    // This is tricky inside Positioned without width. 
-                    // We'll use a simpler approach with the Stack.
-                    return const SizedBox.shrink();
-                  }
-                ),
-              );
-            }),
-            // Correct Positioning approach for markers
-            _buildMilestoneMarker(0.5, progress >= 0.5, color),
-            _buildMilestoneMarker(0.75, progress >= 0.75, color),
-            _buildMilestoneMarker(1.0, progress >= 1.0, color),
-          ],
-        ),
-      ],
-    );
-  }
 
-  Widget _buildMilestoneMarker(double milestone, bool completed, Color color) {
-    return Positioned(
-      left: 0,
-      right: 0,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          double position = (constraints.maxWidth * milestone) - 10;
-          return Container(
-            alignment: Alignment.centerLeft,
-            padding: EdgeInsets.only(left: position > 0 ? position : 0),
-            child: Icon(
-              Icons.star_rounded, 
-              size: 20, 
-              color: completed ? color : Colors.grey.withOpacity(0.4),
-              shadows: completed ? [Shadow(color: color.withOpacity(0.4), blurRadius: 4)] : null,
-            ),
-          );
-        }
-      ),
-    );
-  }
 
   Widget _buildTaskItem(Map<String, dynamic> task) {
     final String title = task['title'].toString();
@@ -751,59 +708,7 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     );
   }
 
-  Widget _buildGoalItem(Map<String, dynamic> goal) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.star_rounded, color: Colors.orange, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(goal['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.black87)),
-                  const SizedBox(height: 2),
-                  Text(goal['course_title'] ?? "Course", style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
-                      borderRadius: BorderRadius.circular(10)
-                    ),
-                    child: Text("GOAL: ${goal['recurrence']?.toUpperCase() ?? 'WEEKLY'}", style: const TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
-                  ),
-                  if (goal['target_hours'] != null) ...[
-                    const SizedBox(height: 12),
-                    _buildProgressBarWithMilestones(
-                      (double.tryParse(goal['progress_hours']?.toString() ?? '0') ?? 0) / 
-                      (double.tryParse(goal['target_hours']?.toString() ?? '1') ?? 1),
-                      Colors.orange,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   void _showTaskOptions(Map<String, dynamic> task) {
     final bool isGroup = task['is_group_assignment'] == true;
@@ -922,7 +827,9 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {},
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentScheduleScreen()));
+          },
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -956,25 +863,32 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   }
 
   Widget _buildEmptySchedule() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(25),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.event_available_rounded, size: 40, color: Colors.grey.shade300),
-          const SizedBox(height: 12),
-          Text(
-            DateTime.now().weekday > 5 ? "Happy Weekend! No classes today." : "No classes scheduled for today.",
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 14, fontWeight: FontWeight.w500),
-          ),
-        ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentScheduleScreen()));
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(25),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.event_available_rounded, size: 40, color: Colors.grey.shade300),
+            const SizedBox(height: 12),
+            Text(
+              DateTime.now().weekday > 5 ? "Happy Weekend! No classes today." : "No classes scheduled for today.",
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 14, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 8),
+            const Text("Tap to view weekly schedule", style: TextStyle(color: Color(0xFF09AEF5), fontSize: 12, fontWeight: FontWeight.bold)),
+          ],
+        ),
       ),
     );
   }

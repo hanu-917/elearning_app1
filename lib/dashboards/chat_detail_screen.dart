@@ -29,18 +29,20 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   List<dynamic> _messages = [];
   bool _isLoading = true;
   String? _myId;
+  String? _myRole;
 
   @override
   void initState() {
     super.initState();
-    _loadMyId();
+    _loadUserInfo();
     _fetchHistory();
   }
 
-  Future<void> _loadMyId() async {
+  Future<void> _loadUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _myId = prefs.getString('user_id');
+      _myRole = prefs.getString('user_role');
     });
   }
 
@@ -55,7 +57,16 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       
       if (mounted) {
         setState(() {
-          _messages = history;
+          // If instructor, only show instructor messages/announcements
+          if (widget.isGroup && _myRole == 'instructor') {
+            _messages = history.where((m) => 
+              m['sender_role'] == 'instructor' || 
+              m['role'] == 'instructor' ||
+              m['sender_id'].toString() == _myId
+            ).toList();
+          } else {
+            _messages = history;
+          }
           _isLoading = false;
         });
         _scrollToBottom();
@@ -139,18 +150,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   itemCount: _messages.length,
                   itemBuilder: (context, index) {
                     final msg = _messages[index];
-                    
                     bool isMe;
                     if (widget.isGroup) {
                       isMe = msg['sender_id'].toString() == _myId;
                     } else {
                       isMe = msg['sender_id'].toString() != widget.userId;
                     }
+                    final isInstructorMsg = msg['sender_role'] == 'instructor' || msg['role'] == 'instructor';
                     
                     return _buildMessageBubble(
                       msg['content'], 
                       isMe, 
                       msg['created_at'],
+                      isAnnouncement: widget.isGroup && isInstructorMsg,
                       senderName: widget.isGroup && !isMe ? "${msg['first_name']} ${msg['last_name']}" : null
                     );
                   },
@@ -162,7 +174,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     );
   }
 
-  Widget _buildMessageBubble(String text, bool isMe, String timeStr, {String? senderName}) {
+  Widget _buildMessageBubble(String text, bool isMe, String timeStr, {String? senderName, bool isAnnouncement = false}) {
     final time = DateFormat('HH:mm').format(DateTime.parse(timeStr).toLocal());
     
     return Align(
@@ -180,28 +192,46 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
             constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isMe ? const Color(0xFF09AEF5) : Colors.white,
+              color: isAnnouncement 
+                ? const Color(0xFFFFF9C4) // Light yellow for announcements
+                : (isMe ? const Color(0xFF09AEF5) : Colors.white),
               borderRadius: BorderRadius.only(
                 topLeft: const Radius.circular(16),
                 topRight: const Radius.circular(16),
                 bottomLeft: Radius.circular(isMe ? 16 : 0),
                 bottomRight: Radius.circular(isMe ? 0 : 16),
               ),
+              border: isAnnouncement ? Border.all(color: Colors.orange.withOpacity(0.3)) : null,
               boxShadow: [
-                if (!isMe) BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))
+                if (!isMe || isAnnouncement) BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))
               ]
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (isAnnouncement)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.campaign_rounded, size: 14, color: Colors.orange),
+                        SizedBox(width: 4),
+                        Text("ANNOUNCEMENT", style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.orange)),
+                      ],
+                    ),
+                  ),
                 Text(
                   text, 
-                  style: TextStyle(color: isMe ? Colors.white : Colors.black87, fontSize: 15)
+                  style: TextStyle(color: (isMe && !isAnnouncement) ? Colors.white : Colors.black87, fontSize: 15)
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  time, 
-                  style: TextStyle(color: isMe ? Colors.white70 : Colors.black38, fontSize: 10)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    time, 
+                    style: TextStyle(color: (isMe && !isAnnouncement) ? Colors.white70 : Colors.black38, fontSize: 10)
+                  ),
                 ),
               ],
             ),
@@ -227,13 +257,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFFF4F7FC),
                   borderRadius: BorderRadius.circular(25),
+                  border: _myRole == 'instructor' ? Border.all(color: Colors.orange.withOpacity(0.3)) : null,
                 ),
                 child: TextField(
                   controller: _messageController,
-                  decoration: const InputDecoration(
-                    hintText: "Type a message...",
+                  decoration: InputDecoration(
+                    hintText: _myRole == 'instructor' ? "Post an announcement..." : "Type a message...",
                     border: InputBorder.none,
-                    hintStyle: TextStyle(color: Colors.black38),
+                    hintStyle: const TextStyle(color: Colors.black38),
+                    prefixIcon: _myRole == 'instructor' ? const Icon(Icons.campaign_rounded, color: Colors.orange, size: 20) : null,
                   ),
                 ),
               ),
@@ -243,8 +275,15 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               onTap: _sendMessage,
               child: Container(
                 padding: const EdgeInsets.all(12),
-                decoration: const BoxDecoration(color: Color(0xFF09AEF5), shape: BoxShape.circle),
-                child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                decoration: BoxDecoration(
+                  color: _myRole == 'instructor' ? Colors.orange : const Color(0xFF09AEF5), 
+                  shape: BoxShape.circle
+                ),
+                child: Icon(
+                  _myRole == 'instructor' ? Icons.campaign_rounded : Icons.send_rounded, 
+                  color: Colors.white, 
+                  size: 20
+                ),
               ),
             ),
           ],

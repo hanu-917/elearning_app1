@@ -35,9 +35,10 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
       backgroundColor: const Color(0xFFF4F7FC),
       appBar: AppBar(
         title: const Text("Quizzes", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        systemOverlayStyle: SystemUiOverlayStyle.light,
         flexibleSpace: Container(
           decoration: const BoxDecoration(
-            gradient: LinearGradient(colors: [Color(0xFFE91E63), Color(0xFFC2185B)]),
+            gradient: LinearGradient(colors: [Color(0xFF09AEF5), Color(0xFF05398F)]),
           ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -69,8 +70,8 @@ class _StudentQuizScreenState extends State<StudentQuizScreen> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         leading: Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: Colors.pink.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-          child: const Icon(Icons.quiz_rounded, color: Colors.pink),
+          decoration: BoxDecoration(color: const Color(0xFF05398F).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+          child: const Icon(Icons.quiz_rounded, color: Color(0xFF05398F)),
         ),
         title: Text(course['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(course['course_code'] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 13)),
@@ -124,7 +125,7 @@ class _CourseQuizListScreenState extends State<_CourseQuizListScreen> {
       appBar: AppBar(
         title: Text(widget.courseTitle, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         flexibleSpace: Container(
-          decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFFE91E63), Color(0xFFC2185B)])),
+          decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF09AEF5), Color(0xFF05398F)])),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -358,7 +359,7 @@ class _QuizTakingScreenState extends State<_QuizTakingScreen> {
       appBar: AppBar(
         title: Text("${_currentIndex + 1} / ${_questions.length}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         flexibleSpace: Container(
-          decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFFE91E63), Color(0xFFC2185B)])),
+          decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF09AEF5), Color(0xFF05398F)])),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
@@ -387,7 +388,7 @@ class _QuizTakingScreenState extends State<_QuizTakingScreen> {
           LinearProgressIndicator(
             value: (_currentIndex + 1) / _questions.length,
             backgroundColor: Colors.grey.shade200,
-            valueColor: const AlwaysStoppedAnimation(Color(0xFFE91E63)),
+            valueColor: const AlwaysStoppedAnimation(Color(0xFF09AEF5)),
           ),
           Expanded(
             child: SingleChildScrollView(
@@ -407,7 +408,7 @@ class _QuizTakingScreenState extends State<_QuizTakingScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Question ${_currentIndex + 1}", style: const TextStyle(color: Colors.pink, fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text("Question ${_currentIndex + 1}", style: const TextStyle(color: Color(0xFF05398F), fontWeight: FontWeight.bold, fontSize: 13)),
                         const SizedBox(height: 8),
                         Text(q['question_text'] ?? '', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, height: 1.4)),
                         const SizedBox(height: 4),
@@ -431,10 +432,10 @@ class _QuizTakingScreenState extends State<_QuizTakingScreen> {
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFE91E63).withOpacity(0.1) : Colors.white,
+                          color: isSelected ? const Color(0xFF05398F).withOpacity(0.1) : Colors.white,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: isSelected ? const Color(0xFFE91E63) : Colors.grey.shade200,
+                            color: isSelected ? const Color(0xFF05398F) : Colors.grey.shade200,
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -442,7 +443,7 @@ class _QuizTakingScreenState extends State<_QuizTakingScreen> {
                           children: [
                             Icon(
                               isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-                              color: isSelected ? const Color(0xFFE91E63) : Colors.grey,
+                              color: isSelected ? const Color(0xFF05398F) : Colors.grey,
                             ),
                             const SizedBox(width: 12),
                             Expanded(child: Text(opt['option_text'] ?? '', style: TextStyle(fontSize: 15, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal))),
@@ -483,7 +484,7 @@ class _QuizTakingScreenState extends State<_QuizTakingScreen> {
                               ? () => setState(() => _currentIndex++)
                               : _submit,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _currentIndex < _questions.length - 1 ? const Color(0xFFE91E63) : Colors.green,
+                        backgroundColor: _currentIndex < _questions.length - 1 ? const Color(0xFF05398F) : Colors.green,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),

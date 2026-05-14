@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:ui';
 import 'auth/welcome_screen.dart';
@@ -9,6 +10,14 @@ import 'utils/date_helper.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DateHelper.init();
+  
+  // Set global status bar style
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light, // White icons
+    statusBarBrightness: Brightness.dark, // iOS
+  ));
+  
   runApp(const ELearningApp());
 }
 

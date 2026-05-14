@@ -66,7 +66,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                           children: [
                             _statCard("Attendance", "${_data!['attendance_rate'] ?? 0}%", Icons.how_to_reg_rounded, Colors.teal),
                             const SizedBox(width: 12),
-                            _statCard("Quiz Avg", "${_data!['quiz_avg_score'] ?? 0}%", Icons.quiz_rounded, Colors.pink),
+                            _statCard("Quiz Avg", "${_data!['quiz_avg_score'] ?? 0}%", Icons.quiz_rounded, const Color(0xFF05398F)),
                           ],
                         ),
                         const SizedBox(height: 24),
@@ -95,7 +95,7 @@ class _StudentAnalyticsScreenState extends State<StudentAnalyticsScreen> {
                         const SizedBox(height: 12),
                         _detailCard([
                           _detailRow("Quizzes Taken", "${_data!['quiz_attempts'] ?? 0}", Colors.purple),
-                          _detailRow("Average Score", "${_data!['quiz_avg_score'] ?? 0}%", Colors.pink),
+                          _detailRow("Average Score", "${_data!['quiz_avg_score'] ?? 0}%", const Color(0xFF05398F)),
                         ]),
 
                         // Attendance visual bar

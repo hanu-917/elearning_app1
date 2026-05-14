@@ -35,9 +35,13 @@ class _InstructorQuizScreenState extends State<InstructorQuizScreen> {
       backgroundColor: const Color(0xFFF4F7FC),
       appBar: AppBar(
         title: const Text("Quiz Manager", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        systemOverlayStyle: SystemUiOverlayStyle.light,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFFE91E63), Color(0xFFC2185B)])),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(colors: [Color(0xFF09AEF5), Color(0xFF05398F)]),
+          ),
         ),
+        elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoading
@@ -58,8 +62,8 @@ class _InstructorQuizScreenState extends State<InstructorQuizScreen> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     leading: Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.pink.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                      child: const Icon(Icons.quiz_rounded, color: Colors.pink),
+                      decoration: BoxDecoration(color: const Color(0xFF05398F).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                      child: const Icon(Icons.quiz_rounded, color: Color(0xFF05398F)),
                     ),
                     title: Text(course['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text(course['course_code'] ?? '', style: const TextStyle(color: Colors.grey)),
@@ -125,13 +129,13 @@ class _CourseQuizManageScreenState extends State<_CourseQuizManageScreen> {
       appBar: AppBar(
         title: Text(widget.courseTitle, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         flexibleSpace: Container(
-          decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFFE91E63), Color(0xFFC2185B)])),
+          decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF09AEF5), Color(0xFF05398F)])),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _createQuiz,
-        backgroundColor: const Color(0xFFE91E63),
+        backgroundColor: const Color(0xFF05398F),
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text("New Quiz", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
@@ -343,7 +347,7 @@ class _QuizEditorScreenState extends State<_QuizEditorScreen> {
       appBar: AppBar(
         title: Text(widget.quizTitle, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
         flexibleSpace: Container(
-          decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFFE91E63), Color(0xFFC2185B)])),
+          decoration: const BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF09AEF5), Color(0xFF05398F)])),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
@@ -359,7 +363,7 @@ class _QuizEditorScreenState extends State<_QuizEditorScreen> {
           ? null
           : FloatingActionButton(
               onPressed: _addQuestion,
-              backgroundColor: const Color(0xFFE91E63),
+              backgroundColor: const Color(0xFF05398F),
               child: const Icon(Icons.add, color: Colors.white),
             ),
       body: _isLoading
@@ -387,7 +391,7 @@ class _QuizEditorScreenState extends State<_QuizEditorScreen> {
                             children: [
                               CircleAvatar(
                                 radius: 14,
-                                backgroundColor: const Color(0xFFE91E63),
+                                backgroundColor: const Color(0xFF05398F),
                                 child: Text("${index + 1}", style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                               ),
                               const SizedBox(width: 10),

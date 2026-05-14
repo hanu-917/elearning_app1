@@ -54,9 +54,10 @@ class _InstructorConvertScreenState extends State<InstructorConvertScreen> {
       backgroundColor: const Color(0xFFF4F7FC),
       appBar: AppBar(
         title: const Text("To PDF", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        systemOverlayStyle: SystemUiOverlayStyle.light,
         flexibleSpace: Container(
           decoration: const BoxDecoration(
-            gradient: LinearGradient(colors: [Color(0xFFFF6D00), Color(0xFFFF8F00)]),
+            gradient: LinearGradient(colors: [Color(0xFF09AEF5), Color(0xFF05398F)]),
           ),
         ),
         elevation: 0,
@@ -71,13 +72,13 @@ class _InstructorConvertScreenState extends State<InstructorConvertScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.orange.shade50,
+                color: const Color(0xFF09AEF5).withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orange.shade200),
+                border: Border.all(color: const Color(0xFF09AEF5).withOpacity(0.2)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.orange.shade700),
+                  const Icon(Icons.info_outline, color: Color(0xFF05398F)),
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
@@ -101,7 +102,7 @@ class _InstructorConvertScreenState extends State<InstructorConvertScreen> {
                 fillColor: Colors.white,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFFF8F00))),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF09AEF5))),
               ),
             ),
             const SizedBox(height: 20),
@@ -137,8 +138,9 @@ class _InstructorConvertScreenState extends State<InstructorConvertScreen> {
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF6D00),
+                  backgroundColor: const Color(0xFF05398F),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 2,
                 ),
               ),
             ),
