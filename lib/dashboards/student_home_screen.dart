@@ -8,7 +8,9 @@ import 'chat_detail_screen.dart';
 import 'student_assignments_screen.dart';
 import 'student_materials_screen.dart';
 import 'student_schedule_screen.dart';
+import 'course_details_screen.dart';
 import '../services/api_service.dart';
+
 import '../utils/date_helper.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -32,6 +34,8 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
   List<dynamic> _courses = [];
   bool _isLoadingCourses = true;
   int _systemUnread = 0;
+  Map<String, dynamic>? _recentMaterial;
+
 
   @override
   void initState() {
@@ -78,7 +82,16 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
         _isUserDataLoading = false;
       });
     }
+    
+    // Fetch recently opened material
+    final recent = await _apiService.getRecentlyOpenedMaterial();
+    if (mounted) {
+      setState(() {
+        _recentMaterial = recent;
+      });
+    }
   }
+
 
   Future<void> _fetchTodaySchedule() async {
     if (!mounted) return;
@@ -414,30 +427,35 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
        );
     }
 
-    if (_courses.isNotEmpty) {
+    if (_recentMaterial != null) {
+      displayTitle = _recentMaterial!['title']?.toString() ?? "Material";
+      displaySubtitle = _recentMaterial!['course_title']?.toString() ?? "Recently Opened";
+    } else if (_courses.isNotEmpty) {
       displayTitle = _courses.first['title']?.toString() ?? "Course Hub";
       displaySubtitle = _courses.first['course_code']?.toString() ?? "My Enrolled Course";
-      
-      final activeGoals = _myGoals.where((g) => g['target_hours'] != null).toList();
-      if (activeGoals.isNotEmpty) {
-        double totalTarget = 0.0;
-        double totalProgress = 0.0;
-        for (var g in activeGoals) {
-          totalTarget += double.tryParse(g['target_hours'].toString()) ?? 0.0;
-          
-          // Safer check for progress_hours to avoid null errors
-          String? progStr;
-          if (g.containsKey('goal') && g['goal'] != null) {
-            progStr = g['goal']['progress_hours']?.toString();
-          }
-          progStr ??= g['progress_hours']?.toString();
-          
-          totalProgress += double.tryParse(progStr ?? '0.0') ?? 0.0;
-        }
-        if (totalTarget > 0) progress = totalProgress / totalTarget;
-        if (progress > 1.0) progress = 1.0;
-      }
     }
+
+    // Always calculate progress based on goals if available
+    final activeGoals = _myGoals.where((g) => g['target_hours'] != null).toList();
+    if (activeGoals.isNotEmpty) {
+      double totalTarget = 0.0;
+      double totalProgress = 0.0;
+      for (var g in activeGoals) {
+        totalTarget += double.tryParse(g['target_hours'].toString()) ?? 0.0;
+        
+        // Safer check for progress_hours to avoid null errors
+        String? progStr;
+        if (g.containsKey('goal') && g['goal'] != null) {
+          progStr = g['goal']['progress_hours']?.toString();
+        }
+        progStr ??= g['progress_hours']?.toString();
+        
+        totalProgress += double.tryParse(progStr ?? '0.0') ?? 0.0;
+      }
+      if (totalTarget > 0) progress = totalProgress / totalTarget;
+      if (progress > 1.0) progress = 1.0;
+    }
+
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -448,17 +466,45 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
+        onTap: () {
+          if (_recentMaterial != null && _recentMaterial!['course_id'] != null) {
+            final courseId = _recentMaterial!['course_id'].toString();
+            final course = _courses.firstWhere(
+              (c) => c['id'].toString() == courseId,
+              orElse: () => null,
+            );
+            if (course != null) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CourseDetailsScreen(course: course, allCourses: _courses),
+                ),
+              );
+            }
+          } else if (_courses.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CourseDetailsScreen(course: _courses.first, allCourses: _courses),
+              ),
+            );
+          }
+        },
         child: Column(
+
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(_courses.isNotEmpty ? "Continue Learning" : "Join a Course", style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+                Text(_recentMaterial != null ? "Recently Opened" : (_courses.isNotEmpty ? "Continue Learning" : "Join a Course"), 
+                  style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)
+                ),
                 const SizedBox.shrink(),
               ],
             ),
+
             const Spacer(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -507,25 +553,29 @@ class _StudentHomeScreenState extends State<StudentHomeScreen> {
     );
   }
 
-  Widget _buildBaseCard({required double width, Gradient? gradient, required Widget child}) {
-    return Container(
-      width: width,
-      height: 150,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: gradient,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          )
-        ],
+  Widget _buildBaseCard({required double width, Gradient? gradient, required Widget child, VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: width,
+        height: 150,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            )
+          ],
+        ),
+        child: child,
       ),
-      child: child,
     );
   }
+
 
   Widget _buildMenuGrid() {
     return GridView.count(
