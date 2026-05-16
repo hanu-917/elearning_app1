@@ -1,46 +1,51 @@
 import 'package:flutter/material.dart';
 import 'terms_conditions_screen.dart';
+import '../utils/app_colors.dart';
+import '../main.dart';
 
 class PrivacySecurityScreen extends StatelessWidget {
   const PrivacySecurityScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F7FC),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF4F7FC),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF05398F)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          "Privacy and Security",
-          style: TextStyle(
-            color: Color(0xFF05398F),
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+    return ValueListenableBuilder<bool>(
+      valueListenable: darkModeNotifier,
+      builder: (context, isDark, _) => Scaffold(
+        backgroundColor: AppColors.scaffold,
+        appBar: AppBar(
+          backgroundColor: AppColors.appBar,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.appBarForeground),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            "Privacy and Security",
+            style: TextStyle(
+              color: AppColors.appBarForeground,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        children: [
-          const SizedBox(height: 10),
-          _buildOption(
-            Icons.description_outlined,
-            "Terms and Conditions",
-            "Read our terms of service",
-            Colors.deepPurple,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const TermsConditionsScreen()),
-              );
-            },
-          ),
-        ],
+        body: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          children: [
+            const SizedBox(height: 10),
+            _buildOption(
+              Icons.description_outlined,
+              "Terms and Conditions",
+              "Read our terms of service",
+              Colors.deepPurple,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const TermsConditionsScreen()),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -49,11 +54,11 @@ class PrivacySecurityScreen extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           )
@@ -71,7 +76,7 @@ class PrivacySecurityScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(icon, color: color, size: 24),
@@ -83,10 +88,10 @@ class PrivacySecurityScreen extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
-                          color: Colors.black87,
+                          color: AppColors.primaryText,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -94,13 +99,13 @@ class PrivacySecurityScreen extends StatelessWidget {
                         subtitle,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: AppColors.secondaryText,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: Colors.black26),
+                Icon(Icons.chevron_right_rounded, color: AppColors.secondaryText.withValues(alpha: 0.3)),
               ],
             ),
           ),
