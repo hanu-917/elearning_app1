@@ -7,6 +7,7 @@ import '../auth/welcome_screen.dart';
 import 'student_profile_settings_screen.dart';
 import 'help_support_screen.dart';
 import 'privacy_security_screen.dart';
+import 'send_feedback_screen.dart';
 import '../services/api_service.dart';
 
 
@@ -276,7 +277,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                   _buildProfileOption(Icons.help_outline_rounded, "Help Center", Colors.purple, onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
                   }),
-                  _buildProfileOption(Icons.feedback_outlined, "Send Feedback", Colors.teal, onTap: () {}),
+                  _buildProfileOption(Icons.feedback_outlined, "Send Feedback", Colors.teal, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const SendFeedbackScreen()));
+                  }),
                   _buildProfileOption(Icons.info_outline_rounded, "About ELMS", Colors.blueGrey, onTap: () {}),
 
                 ],

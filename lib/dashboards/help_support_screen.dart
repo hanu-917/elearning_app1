@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'student_profile_ask_question_screen.dart';
 
-class HelpSupportScreen extends StatelessWidget {
+class HelpSupportScreen extends StatefulWidget {
   const HelpSupportScreen({super.key});
+
+  @override
+  State<HelpSupportScreen> createState() => _HelpSupportScreenState();
+}
+
+class _HelpSupportScreenState extends State<HelpSupportScreen> {
+  bool _showAllFaqs = false;
 
   @override
   Widget build(BuildContext context) {
@@ -30,11 +37,22 @@ class HelpSupportScreen extends StatelessWidget {
             _buildFaqItem("How to contact my instructor?", "You can message your instructor directly through the 'Ask a Question' page or by finding their profile in the Inbox section."),
             _buildFaqItem("How to reset my password?", "Please contact the university admin or use the 'Forgot Password' link directly on the login screen."),
             
+            if (_showAllFaqs) ...[
+              _buildFaqItem("How to submit assignments?", "Go to your course, tap on Assignments, select the specific assignment, and tap 'Submit Assignment' to upload your work."),
+              _buildFaqItem("How do I take a quiz?", "Navigate to the Quizzes section inside your course and tap 'Start Quiz'. Make sure you have a stable internet connection."),
+              _buildFaqItem("Can I access courses offline?", "Yes, if you download the course materials using the download icon, you can view them without an internet connection."),
+              _buildFaqItem("How to update my profile?", "Go to the Profile tab, tap on the edit icon next to your picture to update your profile details."),
+            ],
+
             const SizedBox(height: 10),
             Center(
               child: TextButton(
-                onPressed: () {},
-                child: const Text("See More", style: TextStyle(color: Color(0xFF09AEF5), fontWeight: FontWeight.bold, fontSize: 16)),
+                onPressed: () {
+                  setState(() {
+                    _showAllFaqs = !_showAllFaqs;
+                  });
+                },
+                child: Text(_showAllFaqs ? "See Less" : "See More", style: const TextStyle(color: Color(0xFF09AEF5), fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             ),
             
