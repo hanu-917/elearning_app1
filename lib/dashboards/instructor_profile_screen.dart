@@ -8,6 +8,7 @@ import 'instructor_profile_settings_screen.dart';
 import 'help_support_screen.dart';
 import 'privacy_security_screen.dart';
 import 'send_feedback_screen.dart';
+import 'about_lms_screen.dart';
 
 
 class InstructorProfileScreen extends StatefulWidget {
@@ -244,7 +245,9 @@ class _InstructorProfileScreenState extends State<InstructorProfileScreen> {
                   _buildProfileOption(Icons.feedback_outlined, "Send Feedback", Colors.teal, onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const SendFeedbackScreen()));
                   }),
-                  _buildProfileOption(Icons.info_outline_rounded, "About ELMS", Colors.blueGrey, onTap: () {}),
+                  _buildProfileOption(Icons.info_outline_rounded, "About ELMS", Colors.blueGrey, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutLmsScreen()));
+                  }),
 
                 ],
               ),
