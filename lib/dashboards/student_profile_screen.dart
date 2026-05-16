@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import '../auth/welcome_screen.dart';
 import 'student_profile_settings_screen.dart';
 import 'help_support_screen.dart';
+import 'privacy_security_screen.dart';
 import '../services/api_service.dart';
 
 
@@ -269,7 +270,9 @@ class _StudentProfileScreenState extends State<StudentProfileScreen> {
                   _buildProfileOption(Icons.settings_rounded, "Settings", Colors.grey.shade700, onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const StudentProfileSettingsScreen()));
                   }),
-                  _buildProfileOption(Icons.security_rounded, "Privacy and Security", Colors.red, onTap: () {}),
+                  _buildProfileOption(Icons.security_rounded, "Privacy and Security", Colors.red, onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const PrivacySecurityScreen()));
+                  }),
                   _buildProfileOption(Icons.help_outline_rounded, "Help Center", Colors.purple, onTap: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpSupportScreen()));
                   }),
