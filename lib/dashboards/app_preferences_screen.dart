@@ -12,7 +12,6 @@ class AppPreferencesScreen extends StatefulWidget {
 }
 
 class _AppPreferencesScreenState extends State<AppPreferencesScreen> {
-  String _fontSize = 'Medium';
   bool _darkMode = false;
   String _calendarFormat = 'Global';
 
@@ -25,7 +24,6 @@ class _AppPreferencesScreenState extends State<AppPreferencesScreen> {
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _fontSize = prefs.getString('pref_font_size') ?? 'Medium';
       _darkMode = prefs.getBool('pref_dark_mode') ?? false;
       _calendarFormat = prefs.getString('pref_calendar_format') ?? 'Global';
     });
@@ -74,49 +72,6 @@ class _AppPreferencesScreenState extends State<AppPreferencesScreen> {
                   },
                 ),
               ),
-  
-              const SizedBox(height: 30),
-              
-              // Font Size
-              Text("Typography", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryText)),
-              const SizedBox(height: 15),
-              _buildPreferenceCard(
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.text_fields_rounded, color: Colors.purple),
-                      title: Text("Font Size", style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.primaryText)),
-                      subtitle: Text("Adjust text clarity", style: TextStyle(color: AppColors.secondaryText)),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: ['Small', 'Medium', 'Large'].map((size) {
-                          bool isSelected = _fontSize == size;
-                          return ChoiceChip(
-                            label: Text(size),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              if (selected) {
-                                setState(() => _fontSize = size);
-                                _savePreference('pref_font_size', size);
-                              }
-                            },
-                            selectedColor: const Color(0xFF09AEF5).withOpacity(0.2),
-                            labelStyle: TextStyle(
-                              color: isSelected ? const Color(0xFF09AEF5) : AppColors.primaryText,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                  ],
-                ),
-              ),
-  
               const SizedBox(height: 30),
   
               // Regional Settings
